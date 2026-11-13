@@ -1,0 +1,179 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserKycLevel {
+  NONE
+  LEVEL_1_COUNTER
+  LEVEL_2_LIGHT
+  LEVEL_3_FULL
+}
+
+enum TournamentCategory {
+  FOOTBALL
+  FUTSAL
+  VOLLEYBALL
+  BASKETBALL
+  SCHOOL_EVENT
+  CHESS
+  ESPORTS_DOTA
+  HACKATHON
+}
+
+enum TournamentMode {
+  OFF_CHAIN
+  ON_CHAIN_ESCROW
+}
+
+enum TournamentStatus {
+  REGISTRATION_OPEN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED_EXPIRED
+}
+
+enum ParticipantRole {
+  ORGANIZER
+  CAPTAIN
+  SUBCAPTAIN
+  PLAYER
+  SPECTATOR
+}
+
+enum PrizeType {
+  USDC_TOKEN
+  MERCHANT_QR_VOUCHER
+}
+
+enum PrizeClaimStatus {
+  PENDING_TOURNAMENT_END
+  AWAITING_CAPTAIN_KYC
+  READY_TO_CLAIM
+  CLAIMED_VERIFIED
+  REFUNDED_TO_SPONSOR
+}
+
+model User {
+  id                        String              @id @default(uuid())
+  fullName                  String              @map("full_name")
+  whatsappPhone             String?             @unique @map("whatsapp_phone")
+  phoneVerified             Boolean             @default(false) @map("phone_verified")
+  kycLevel                  UserKycLevel        @default(NONE) @map("kyc_level")
+  stellarSmartWalletAddress String?             @map("stellar_smart_wallet_address")
+  createdAt                 DateTime            @default(now()) @map("created_at")
+
+  verifications             UserVerification[]
+  organizedTournaments      Tournament[]        @relation("OrganizerTournaments")
+  captainedTeams            Team[]              @relation("CaptainTeams")
+  subCaptainedTeams         Team[]              @relation("SubCaptainTeams")
+  participations            TournamentParticipant[]
+  claimedPrizes             TournamentPrize[]
+
+  @@map("users")
+}
+
+model UserVerification {
+  id                     String       @id @default(uuid())
+  userId                 String       @map("user_id")
+  documentType           String       @map("document_type")
+  documentNumber         String       @map("document_number")
+  countryCode            String       @map("country_code")
+  documentFrontUrl       String?      @map("document_front_url")
+  selfieOrLivenessId     String?      @map("selfie_or_liveness_id")
+  identityCommitmentHash String       @map("identity_commitment_hash")
+  verifiedAt             DateTime?    @map("verified_at")
+  verifiedBy             String?      @map("verified_by")
+
+  user                   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([documentType, documentNumber, countryCode])
+  @@map("user_verifications")
+}
+
+model Tournament {
+  id                 String              @id @default(uuid())
+  organizerId        String              @map("organizer_id")
+  name               String
+  category           TournamentCategory
+  mode               TournamentMode      @default(OFF_CHAIN)
+  status             TournamentStatus    @default(REGISTRATION_OPEN)
+  teamMaxSize        Int                 @default(10) @map("team_max_size")
+  rosterLocked       Boolean             @default(false) @map("roster_locked")
+  sorobanContractId  String?             @map("soroban_contract_id")
+  sorobanEscrowId    String?             @map("soroban_escrow_id")
+  deadlineLedger     Int?                @map("deadline_ledger")
+  publicSlug         String              @unique @map("public_slug")
+  createdAt          DateTime            @default(now()) @map("created_at")
+
+  organizer          User                @relation("OrganizerTournaments", fields: [organizerId], references: [id])
+  teams              Team[]
+  participants       TournamentParticipant[]
+  prizes             TournamentPrize[]
+
+  @@map("tournaments")
+}
+
+model Team {
+  id                  String              @id @default(uuid())
+  tournamentId        String              @map("tournament_id")
+  name                String
+  captainUserId       String              @map("captain_user_id")
+  subcaptainUserId    String?             @map("subcaptain_user_id")
+  whatsappInviteToken String              @unique @map("whatsapp_invite_token")
+  finalStanding       Int?                @map("final_standing") // 1, 2, 3
+  createdAt           DateTime            @default(now()) @map("created_at")
+
+  tournament          Tournament          @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  captain             User                @relation("CaptainTeams", fields: [captainUserId], references: [id])
+  subcaptain          User?               @relation("SubCaptainTeams", fields: [subcaptainUserId], references: [id])
+  participants        TournamentParticipant[]
+  wonPrizes           TournamentPrize[]
+
+  @@map("teams")
+}
+
+model TournamentParticipant {
+  id               String          @id @default(uuid())
+  tournamentId     String          @map("tournament_id")
+  teamId           String?         @map("team_id")
+  userId           String          @map("user_id")
+  role             ParticipantRole
+  joinedViaWhatsapp Boolean        @default(true) @map("joined_via_whatsapp")
+  joinedAt         DateTime        @default(now()) @map("joined_at")
+
+  tournament       Tournament      @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  team             Team?           @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, userId])
+  @@map("tournament_participants")
+}
+
+model TournamentPrize {
+  id                    String            @id @default(uuid())
+  tournamentId          String            @map("tournament_id")
+  sponsorName           String            @map("sponsor_name")
+  sponsorWalletOrId     String?           @map("sponsor_wallet_or_id")
+  targetStanding        Int               @map("target_standing") // 1, 2, 3
+  prizeType             PrizeType         @map("prize_type")
+  amountUsdc            Decimal?          @map("amount_usdc") @db.Decimal(12, 2)
+  voucherDescription    String?           @map("voucher_description")
+  requiredKycLevel      UserKycLevel      @map("required_kyc_level")
+  winningTeamId         String?           @map("winning_team_id")
+  claimedByUserId       String?           @map("claimed_by_user_id")
+  claimStatus           PrizeClaimStatus  @default(PENDING_TOURNAMENT_END) @map("claim_status")
+  sorobanTxHash         String?           @map("soroban_tx_hash")
+  accountingReceiptPdf  String?           @map("accounting_receipt_pdf")
+  claimedAt             DateTime?         @map("claimed_at")
+
+  tournament            Tournament        @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  winningTeam           Team?             @relation(fields: [winningTeamId], references: [id])
+  claimedByUser         User?             @relation(fields: [claimedByUserId], references: [id])
+
+  @@map("tournament_prizes")
+}
