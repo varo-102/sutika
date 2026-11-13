@@ -6,7 +6,11 @@ out/
 node_modules/
 
 # Environment files
+.env
 .env*.local
+.env.production
+.env.development
+!.env.example
 
 # Rust / Soroban
 contracts/**/target/
@@ -20,3 +24,4 @@ yarn-error.log*
 # OS files
 .DS_Store
 Thumbs.db
+
