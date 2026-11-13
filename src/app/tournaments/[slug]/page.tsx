@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Trophy,
   Users,
@@ -30,6 +31,15 @@ export default async function TournamentDetailPage({ params }: PageProps) {
     notFound();
   }
 
+  const isEsportsOrTech =
+    tournament.category === "ESPORTS_DOTA" ||
+    tournament.category === "HACKATHON" ||
+    tournament.category === "CHESS";
+
+  const bannerImg = isEsportsOrTech
+    ? "/images/hero-esports.jpeg"
+    : "/images/hero-sports.jpeg";
+
   return (
     <div className="space-y-8">
       {/* Back Button */}
@@ -41,12 +51,23 @@ export default async function TournamentDetailPage({ params }: PageProps) {
         <span>Volver a Torneos</span>
       </Link>
 
-      {/* Header Banner */}
-      <div className="rounded-2xl border border-sutika-border bg-sutika-card p-6 sm:p-8 shadow-xl relative overflow-hidden">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div>
-            <div className="flex items-center gap-3 mb-3">
-              <span className="text-xs px-2.5 py-1 rounded-md bg-sutika-bg border border-sutika-border font-semibold text-slate-300">
+      {/* Header Banner with Rich Visual Background */}
+      <div className="rounded-3xl border border-sutika-border bg-sutika-card p-6 sm:p-10 shadow-2xl relative overflow-hidden">
+        {/* Background Photo with Gradient Fade */}
+        <div className="absolute inset-0 opacity-20 pointer-events-none">
+          <Image
+            src={bannerImg}
+            alt={tournament.name}
+            fill
+            className="object-cover object-center"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-sutika-card via-sutika-card/90 to-sutika-card/60" />
+        </div>
+
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="max-w-2xl">
+            <div className="flex flex-wrap items-center gap-3 mb-4">
+              <span className="text-xs px-3 py-1 rounded-md bg-sutika-bg/90 backdrop-blur-md border border-sutika-border font-bold text-white uppercase tracking-wider">
                 {tournament.category.replace("_", " ")}
               </span>
 
@@ -57,18 +78,18 @@ export default async function TournamentDetailPage({ params }: PageProps) {
               />
 
               {tournament.rosterLocked && (
-                <span className="text-xs px-2.5 py-1 rounded-md bg-sutika-bg border border-sutika-border text-sutika-muted flex items-center gap-1">
+                <span className="text-xs px-2.5 py-1 rounded-md bg-sutika-bg/80 backdrop-blur-md border border-sutika-border text-sutika-muted flex items-center gap-1">
                   <Lock className="w-3 h-3" />
                   Listas Congeladas
                 </span>
               )}
             </div>
 
-            <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
+            <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight leading-tight">
               {tournament.name}
             </h1>
 
-            <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-sutika-muted">
+            <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-sutika-muted">
               <div>
                 Organizador: <span className="text-white font-medium">{tournament.organizer.fullName}</span>
               </div>
@@ -85,13 +106,13 @@ export default async function TournamentDetailPage({ params }: PageProps) {
 
           {/* Upgrade Banner Button if OFF_CHAIN */}
           {tournament.mode === "OFF_CHAIN" && (
-            <div className="p-4 rounded-xl bg-sutika-bg border border-sutika-gold/30 max-w-sm">
+            <div className="p-4 rounded-2xl bg-sutika-bg/90 backdrop-blur-md border border-sutika-gold/40 max-w-sm shadow-xl relative z-10">
               <div className="flex items-center gap-2 text-xs font-bold text-sutika-gold mb-1">
                 <Sparkles className="w-4 h-4" />
                 <span>¿Conseguiste un Patrocinador?</span>
               </div>
-              <p className="text-xs text-sutika-muted mb-3">
-                Convierte este torneo barrial en un Torneo Verificado bloqueando premios en Soroban Testnet.
+              <p className="text-xs text-sutika-muted mb-3 leading-relaxed">
+                Ancla este torneo barrial a <strong>Soroban Testnet</strong> en un clic y custodia los premios con respaldo criptográfico.
               </p>
               <UpgradeToOnChainButton tournamentId={tournament.id} />
             </div>
