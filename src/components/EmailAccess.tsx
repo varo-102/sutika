@@ -1,10 +1,9 @@
 "use client";
 
 import {
-  useCallback,
+  useEffect,
   useMemo,
   useState,
-  useSyncExternalStore,
   type FormEvent,
   type ReactNode,
 } from "react";
@@ -16,10 +15,16 @@ type Children = (wallet: CompetitionWallet) => ReactNode;
 function EmailAccount({ children }: { children: Children }) {
   const sdk = usePollar();
   const client = sdk.getClient();
-  const state = useSyncExternalStore(
-    useCallback((notify) => client.onAuthStateChange(notify), [client]),
-    () => client.getAuthState(),
-  );
+  const [state, setState] = useState(() => client.getAuthState());
+  const provisioningDisabled =
+    sdk.appConfig.application?.walletProvisioning === "NONE";
+
+  useEffect(() => {
+    const unsubscribe = client.onAuthStateChange(setState);
+    setState(client.getAuthState());
+    return unsubscribe;
+  }, [client]);
+
   const [notice, setNotice] = useState("");
   const [activating, setActivating] = useState(false);
 
@@ -54,6 +59,18 @@ function EmailAccount({ children }: { children: Children }) {
   if (sdk.isAuthenticated) {
     if (!sdk.verified) return <p role="status">Verificando tu sesión…</p>;
     const address = sdk.wallet?.address;
+    if (!address && provisioningDisabled)
+      return (
+        <>
+          <p className="data-notice">
+            Por ahora, Pollar permite entrar con correo. Para participar, vuelve
+            a las opciones de acceso y conecta Freighter en Testnet.
+          </p>
+          <button type="button" className="text-action" onClick={sdk.logout}>
+            Cerrar sesión
+          </button>
+        </>
+      );
     if (!address)
       return (
         <>
