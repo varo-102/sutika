@@ -18,8 +18,8 @@ const roles = [
     title: "Quiero organizar",
     steps: [
       "Ingresa el nombre del torneo y elige Clash Royale 1v1 o Mobile Legends 5v5.",
-      "Revisa el premio, conecta tu cuenta de prueba y escribe la dirección pública del patrocinador.",
-      "Firma la creación y registra el torneo en Stellar. Copia el enlace para invitar a los jugadores.",
+      "Elige patrocinio, cuotas o ambos. Indica los cupos, el cierre y la billetera de un árbitro independiente.",
+      "Revisa las tarifas y firma la publicación. Si hay patrocinio, el patrocinador deposita el premio antes de que se abran las inscripciones. Comparte el enlace.",
     ],
     action: "Preparar un torneo",
     href: "/create",
@@ -29,8 +29,8 @@ const roles = [
     icon: Gamepad2,
     title: "Quiero jugar",
     steps: [
-      "Abre tu invitación y revisa el juego y el estado del premio. La inscripción es gratuita.",
-      "En la ficha del torneo, elige Inscribirme y conecta tu cuenta de prueba.",
+      "Abre tu invitación y revisa el premio y la cuota. En los torneos 5v5 con cuota, paga el capitán por todo el equipo.",
+      "Conecta tu cuenta de prueba y firma la inscripción. Si el torneo se cancela, la cuota vuelve a la billetera que la pagó cuando se solicita la devolución.",
       "Para Clash Royale escribe tu nombre en el juego. Para Mobile Legends elige un equipo o crea el tuyo. Confirma tu inscripción.",
     ],
     action: "Ver torneos de prueba",
@@ -43,7 +43,7 @@ const roles = [
     steps: [
       "Abre la ficha con la cuenta que usaste para inscribirte. Revisa el resultado y la confirmación del patrocinador.",
       "Espera 24 horas desde que se publica el resultado. Si hay una revisión abierta, espera la decisión del árbitro.",
-      "Cuando aparezca Cobrar el premio, confirma con tu cuenta. En 5v5 basta una solicitud para repartir entre los cinco titulares.",
+      "Completa la verificación de prueba con datos ficticios y confirma la billetera receptora. En 5v5 cada titular confirma su parte antes de que Stellar pague a los cinco en una transacción.",
     ],
     action: "Ver un historial de ejemplo",
     href: "/tournaments/demo-mobile-legends#historial",
@@ -61,7 +61,7 @@ export default function Guide() {
           <h1>Cómo funciona SUTIKA</h1>
         </div>
         <p>
-          Prepara tu torneo, participa gratis o consulta un premio desde su
+          Prepara tu torneo, confirma tu inscripción o consulta el premio desde su
           ficha. La demo usa Stellar Testnet y muestra movimientos de prueba.
         </p>
         <nav className="buttons" aria-label="Accesos de la guía">

@@ -34,10 +34,10 @@ export function weights(value: unknown, sizes: number[]) {
   if (
     !Array.isArray(value) ||
     !sizes.includes(value.length) ||
-    value.some((x) => typeof x !== "number" || !Number.isInteger(x) || x < 1 || x > 10_000) ||
+    value.some((x) => typeof x !== "number" || !Number.isInteger(x) || x < 100 || x > 10_000) ||
     value.reduce((sum: number, x: number) => sum + x, 0) !== 10_000
   ) {
-    throw new Error("El reparto debe sumar 100 %, con una parte positiva para cada puesto o titular.");
+    throw new Error("El reparto debe sumar 100 %, con al menos 1 % para cada puesto o titular.");
   }
   return value as number[];
 }

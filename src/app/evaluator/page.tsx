@@ -30,6 +30,8 @@ import {
 } from "@/lib/stellar";
 import { games, gameOf } from "@/lib/rules";
 import { testnetProtocol } from "@/lib/testnetProtocol";
+import v3 from "@/lib/v3/deployment.json";
+import proofs from "@/lib/v3/proofs.json";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Guía del evaluador" };
 
@@ -73,7 +75,7 @@ export default async function Evaluator() {
             target="_blank"
             rel="noreferrer"
           >
-            Ver contrato en Stellar <ExternalLink size={16} />
+            Ver contrato histórico <ExternalLink size={16} />
           </a>
         </div>
       </section>
@@ -136,6 +138,26 @@ export default async function Evaluator() {
           })}
         </div>
       </section>
+      <section className="eval-block" id="v3">
+        <div className="block-heading">
+          <span className="accent-icon gold"><Coins /></span>
+          <div><h2>Operaciones confirmadas de la V3</h2><p>Ensayos de depósito y devolución con USDC de Stellar Testnet.</p></div>
+        </div>
+        <div className="spec-grid">
+          {proofs.map((proof) => <article key={proof.hash}>
+            <h3>{proof.title}</h3>
+            <p>{proof.text}</p>
+            <a className="inline-link" href={getExplorerTxUrl(proof.hash)} target="_blank" rel="noreferrer">
+              {proof.action} <ExternalLink size={17} />
+            </a>
+          </article>)}
+        </div>
+        <div className="buttons">
+          <a className="btn btn-outline" href={getExplorerContractUrl(v3.contractId)} target="_blank" rel="noreferrer">Contrato V3 <ExternalLink size={16} /></a>
+          <a className="btn btn-dark" href={getExplorerTxUrl(v3.uploadTx)} target="_blank" rel="noreferrer">Carga del WASM V3 <ExternalLink size={16} /></a>
+        </div>
+        <CopyValue value={v3.wasmHash} label="el hash del WASM V3" />
+      </section>
       <aside className="guide-preview">
         <BookOpen aria-hidden="true" />
         <div>
@@ -155,7 +177,7 @@ export default async function Evaluator() {
             <Cpu />
           </span>
           <div>
-            <h2>Despliegue en Stellar Testnet</h2>
+            <h2>Contrato de las copas originales</h2>
             <p>
               Verifica la instancia y la huella digital del programa desplegado.
             </p>

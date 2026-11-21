@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Link2 } from "lucide-react";
 
-export default function ShareTournament() {
+export default function ShareTournament({ team }: { team?: string }) {
   const [notice, setNotice] = useState("");
   const [link, setLink] = useState("");
 
@@ -11,6 +11,7 @@ export default function ShareTournament() {
     const url = new URL(window.location.href);
     url.hash = "";
     url.search = "";
+    if (team) url.searchParams.set("equipo", team);
     try {
       await navigator.clipboard.writeText(url.href);
       setNotice("Enlace copiado.");
@@ -23,7 +24,7 @@ export default function ShareTournament() {
   return (
     <div className="share-tournament">
       <button className="btn btn-outline" type="button" onClick={copy}>
-        <Link2 /> Copiar invitación
+        <Link2 /> {team ? "Invitar al equipo" : "Copiar enlace"}
       </button>
       {notice && <small role="status">{notice}</small>}
       {link && (

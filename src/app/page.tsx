@@ -18,10 +18,12 @@ import { publicTournaments } from "@/lib/publicTournaments";
 import { gameArt } from "@/lib/gameArt";
 import { games, gameOf, WINNER_USDC } from "@/lib/rules";
 import { deployment } from "@/lib/stellar";
+import { recentCompetitionsV3 } from "@/lib/v3/view";
+import { modeLabels } from "@/lib/v3/rules";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const { tournaments, live } = await publicTournaments();
+  const [{ tournaments, live }, published] = await Promise.all([publicTournaments(), recentCompetitionsV3()]);
   return (
     <>
       <section className="arena-hero" aria-labelledby="hero-heading">
@@ -39,7 +41,7 @@ export default async function Home() {
             </h1>
             <p className="hero-intro">
               Compite en <strong>Clash Royale</strong> o{" "}
-              <strong>Mobile Legends</strong>. El primer puesto gana{" "}
+              <strong>Mobile Legends</strong>. En las copas de la demo, el primer puesto gana{" "}
               <strong>5 USDC de prueba</strong>. Desde el depósito del
               patrocinador hasta la última transferencia, el premio se puede
               seguir en Stellar.
@@ -62,7 +64,7 @@ export default async function Home() {
           <div>
             <dt>
               <Coins />
-              Premio por torneo
+              Premio en cada copa demo
             </dt>
             <dd>{WINNER_USDC} USDC</dd>
           </div>
@@ -113,6 +115,17 @@ export default async function Home() {
             Crear torneo
           </Link>
         </div>
+        {published.length > 0 && (
+          <div className="v3-published" aria-label="Torneos publicados en Stellar Testnet">
+            {published.map((tournament) => (
+              <Link className="panel" href={"/c/" + tournament.slug} key={tournament.slug}>
+                <small>{games[tournament.game].name} · {modeLabels[tournament.mode]}</small>
+                <h3>{tournament.name}</h3>
+                <span className="inline-link">Ver torneo <ArrowRight size={16} /></span>
+              </Link>
+            ))}
+          </div>
+        )}
         {!live && (
           <p className="data-notice">
             Mostramos los registros confirmados en Stellar. Los datos en vivo no

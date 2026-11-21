@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, CirclePlus, Crown } from "lucide-react";
-import CreateTournamentForm from "@/components/CreateTournamentForm";
+import V3Create from "@/components/V3Create";
+import { activeCore } from "@/lib/v3/chain";
 export const metadata = { title: "Nuevo torneo" };
 export default function Create() {
   return (
@@ -20,8 +21,8 @@ export default function Create() {
           </div>
         </div>
         <p>
-          Elige el juego, ponle un nombre y revisa el premio. Puedes preparar la
-          ficha antes de conectar tu cuenta de prueba.
+          Elige el juego y cómo se forma el premio. Revisa el monto, las tarifas y los cupos antes de
+          conectar tu cuenta de prueba.
         </p>
       </header>
       <section className="panel">
@@ -31,7 +32,7 @@ export default function Create() {
           </span>
           <h2>Configurar la competencia</h2>
         </div>
-        <CreateTournamentForm />
+        {activeCore() ? <V3Create /> : <p>La creación en Stellar Testnet todavía no está disponible en este entorno.</p>}
       </section>
     </div>
   );

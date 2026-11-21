@@ -34,3 +34,6 @@ jobs:
           "$RUNNER_TEMP/stellar" contract build
           expected=$(node -p "require('../../src/lib/deployment.json').wasmHash")
           echo "$expected  target/wasm32v1-none/release/sutika_core.wasm" | sha256sum -c -
+
+          expected_v3=$(node -p "require('../../src/lib/v3/deployment.json').wasmHash")
+          echo "$expected_v3  target/wasm32v1-none/release/sutika_core_v3.wasm" | sha256sum -c -
