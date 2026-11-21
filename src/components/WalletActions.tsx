@@ -2,7 +2,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { PollarProvider, usePollar } from "@pollar/react";
-import { games } from "@/lib/rules";
+import { games, WINNER_USDC } from "@/lib/rules";
 
 type Team = { id: string; name: string; count: number };
 type Props = {
@@ -31,11 +31,11 @@ const labels: Record<string, string> = {
   bind: "Vincular custodia",
   fund: "Depositar USDC",
   freeze: "Cerrar inscripciones",
-  declare: "Publicar podio",
+  declare: "Declarar ganador",
   mark: "Registrar resultados en la custodia",
   approve_tw: "Aprobar hitos de Trustless Work",
-  approve: "Confirmar podio",
-  dispute: "Impugnar podio",
+  approve: "Confirmar ganador",
+  dispute: "Impugnar resultado",
   resolve: "Resolver impugnación",
   release: "Reclamar premio",
 };
@@ -72,7 +72,7 @@ function Controls(props: Props) {
         name: form.get("name"),
         game: form.get("game"),
         sponsor: form.get("sponsor"),
-        amounts: [1, 2, 3].map((i) => form.get("p" + i)),
+        winnerAmount: WINNER_USDC,
       };
     else if (selectedKind === "join")
       action = {
@@ -85,7 +85,7 @@ function Controls(props: Props) {
       action = {
         kind: selectedKind,
         slug: props.slug,
-        podium: [1, 2, 3].map((i) => form.get("p" + i)),
+        winnerTeamId: form.get("winner"),
       };
     else if (selectedKind === "resolve")
       action = {
@@ -97,8 +97,7 @@ function Controls(props: Props) {
       action = {
         kind: selectedKind,
         slug: props.slug,
-        place:
-          selectedKind === "release" ? Number(form.get("place")) : undefined,
+        place: selectedKind === "release" ? 1 : undefined,
       };
     setBusy(true);
     setInfo("Confirma la solicitud en tu billetera.");
@@ -223,21 +222,12 @@ function Controls(props: Props) {
               Billetera del patrocinador
               <input name="sponsor" placeholder="G…" required maxLength={56} />
             </label>
-            <div className="form-grid">
-              {[1, 2, 3].map((i) => (
-                <label key={i}>
-                  Puesto {i} · USDC brutos
-                  <input
-                    name={"p" + i}
-                    required
-                    type="number"
-                    step=".01"
-                    min=".01"
-                    max="9999999"
-                    defaultValue={[10, 6, 4][i - 1]}
-                  />
-                </label>
-              ))}
+            <div className="fixed-prize">
+              <strong>Primer puesto · 5 USDC</strong>
+              <p>
+                El patrocinador cubre las comisiones. En Mobile Legends cada
+                titular ganador recibe 1 USDC.
+              </p>
             </div>
           </>
         ) : (
@@ -281,38 +271,32 @@ function Controls(props: Props) {
               </>
             )}
             {selection === "declare" && (
-              <div className="form-grid">
-                {[1, 2, 3].map((i) => (
-                  <label key={i}>
-                    Puesto {i}
-                    <select required name={"p" + i} defaultValue="">
-                      <option value="">Selecciona</option>
-                      {teams.map((t) => (
-                        <option key={t.id} value={t.id}>
-                          {t.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                ))}
-              </div>
-            )}
-            {selection === "release" && (
               <label>
-                Puesto
-                <select name="place">
-                  {[1, 2, 3].map((n) => (
-                    <option key={n}>{n}</option>
+                Ganador del torneo
+                <select required name="winner" defaultValue="">
+                  <option value="">Selecciona al ganador</option>
+                  {teams.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
                   ))}
                 </select>
               </label>
+            )}
+            {selection === "release" && (
+              <p className="fixed-prize">
+                El primer puesto recibe{" "}
+                {props.size === 5
+                  ? "5 USDC en total, 1 por titular."
+                  : "5 USDC."}
+              </p>
             )}
             {selection === "resolve" && (
               <label>
                 Decisión
                 <select name="uphold">
-                  <option value="yes">Ratificar podio</option>
-                  <option value="no">Solicitar un podio nuevo</option>
+                  <option value="yes">Ratificar resultado</option>
+                  <option value="no">Solicitar una corrección</option>
                 </select>
               </label>
             )}

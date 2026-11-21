@@ -7,7 +7,14 @@ import {
   StrKey,
   xdr,
 } from "@stellar/stellar-sdk";
-import { display, prizeAmounts, split, units } from "../src/lib/rules.ts";
+import {
+  display,
+  prizeAmounts,
+  split,
+  units,
+  WINNER_FUNDING,
+  WINNER_UNITS,
+} from "../src/lib/rules.ts";
 import { verifiedTransfers } from "../src/lib/receipts.ts";
 const asset = StrKey.encodeContract(Buffer.alloc(32, 4)),
   core = StrKey.encodeContract(Buffer.alloc(32, 5));
@@ -88,4 +95,15 @@ test("individual and five-way payouts require matching registry and token events
       false,
     );
   }
+});
+
+test("the sponsor covers fees so the first-place prize is exactly five USDC", () => {
+  assert.equal(WINNER_FUNDING.net, units("5"));
+  assert.equal(display(WINNER_FUNDING.gross), "5.1177072");
+  assert.equal(
+    WINNER_FUNDING.net + WINNER_FUNDING.platform + WINNER_FUNDING.protocol,
+    WINNER_FUNDING.gross,
+  );
+  assert.deepEqual(split(WINNER_UNITS, 1), [units("5")]);
+  assert.deepEqual(split(WINNER_UNITS, 5), Array(5).fill(units("1")));
 });

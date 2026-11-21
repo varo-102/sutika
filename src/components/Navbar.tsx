@@ -1,25 +1,94 @@
+"use client";
 import Link from "next/link";
 import Image from "next/image";
+import { useState } from "react";
+import { usePathname } from "next/navigation";
+import { Award, CirclePlus, ExternalLink, Menu, X } from "lucide-react";
+import { getExplorerContractUrl } from "@/lib/stellar";
+
 export default function Navbar() {
+  const path = usePathname(),
+    [open, setOpen] = useState(false);
+  const dismiss = () => setOpen(false);
   return (
-    <header className="nav">
+    <header
+      className="nav"
+      onKeyDown={(e) => {
+        if (e.key === "Escape" && open) {
+          dismiss();
+          document.getElementById("mobile-menu-button")?.focus();
+        }
+      }}
+    >
       <div className="wrap navbar">
-        <Link href="/" className="brand">
-          <Image
-            width={38}
-            height={38}
-            src="/branding/isologo-transparente-sutika.png"
-            alt=""
-          />
-          SUTIKA
+        <Link
+          href="/"
+          className="brand"
+          aria-label="SUTIKA, inicio"
+          onClick={dismiss}
+        >
+          <span className="brand-icon">
+            <Image
+              width={35}
+              height={35}
+              src="/branding/isologo-transparente-sutika.png"
+              alt=""
+            />
+          </span>
+          <span className="brand-name">SUTIKA</span>
+          <span className="brand-network">Soroban Testnet</span>
         </Link>
-        <nav aria-label="Principal">
-          <Link href="/#torneos">Torneos</Link>
-          <Link href="/evaluator">Evaluador</Link>
-          <Link className="nav-action" href="/create">
-            Crear torneo
+        <nav
+          className={"main-nav" + (open ? " nav-open" : "")}
+          aria-label="Principal"
+          id="main-menu"
+        >
+          <Link href="/#torneos" onClick={dismiss}>
+            Torneos
           </Link>
+          <Link
+            className="evaluator-link"
+            href="/evaluator"
+            aria-current={path === "/evaluator" ? "page" : undefined}
+            onClick={dismiss}
+          >
+            <Award size={16} />
+            Modo evaluador
+          </Link>
+          <a
+            href={getExplorerContractUrl()}
+            target="_blank"
+            rel="noreferrer"
+            onClick={dismiss}
+          >
+            Contrato en Explorer <ExternalLink size={13} />
+          </a>
         </nav>
+        <div className="nav-actions">
+          <Link
+            className="btn btn-purple nav-create"
+            href="/create"
+            onClick={dismiss}
+          >
+            <CirclePlus size={16} />
+            Nuevo torneo
+          </Link>
+          <span className="nav-testnet">
+            <i aria-hidden="true" />
+            Stellar Testnet
+          </span>
+          <button
+            id="mobile-menu-button"
+            type="button"
+            className="menu-toggle"
+            aria-expanded={open}
+            aria-controls="main-menu"
+            aria-label={open ? "Cerrar menú" : "Abrir menú"}
+            onClick={() => setOpen(!open)}
+          >
+            {open ? <X size={21} /> : <Menu size={21} />}
+          </button>
+        </div>
       </div>
     </header>
   );

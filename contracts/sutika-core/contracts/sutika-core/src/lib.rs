@@ -7,6 +7,10 @@ use soroban_sdk::{
 
 const WINDOW: u64 = 24 * 60 * 60;
 const MAX_TEAMS: u32 = 16;
+// One USDC has seven decimal places on Stellar. The sponsor covers both fees.
+const WINNER_NET: i128 = 50_000_000;
+const FUNDED_AMOUNT: i128 = 51_177_072;
+const PLATFORM_FEE_BPS: u32 = 200;
 
 #[contractclient(name = "MultiReleaseClient")]
 pub trait MultiRelease {
@@ -109,11 +113,13 @@ fn verify_binding(
         return Err(Error::Invalid);
     }
     let milestones: Vec<Map<Symbol, Val>> = field(env, &data, "milestones")?;
-    if milestones.len() != 3 {
+    if milestones.len() != 1 || field::<u32>(env, &data, "platform_fee")? != PLATFORM_FEE_BPS {
         return Err(Error::Invalid);
     }
     for milestone in milestones.iter() {
-        if field::<Address>(env, &milestone, "receiver")? != core {
+        if field::<Address>(env, &milestone, "receiver")? != core
+            || field::<i128>(env, &milestone, "amount")? != FUNDED_AMOUNT
+        {
             return Err(Error::Invalid);
         }
     }
@@ -211,7 +217,7 @@ impl SutikaCore {
         if !t.roster.is_empty() || t.escrow.is_none() {
             return Err(Error::WrongPhase);
         }
-        if teams.len() < 3 || teams.len() > MAX_TEAMS {
+        if teams.len() < 2 || teams.len() > MAX_TEAMS {
             return Err(Error::Invalid);
         }
         let mut seen: Map<Address, bool> = Map::new(&env);
@@ -242,18 +248,11 @@ impl SutikaCore {
         if t.roster.is_empty() || !t.podium.is_empty() || t.paid != 0 {
             return Err(Error::WrongPhase);
         }
-        if podium.len() != 3 || net.len() != 3 {
+        if podium.len() != 1
+            || net != vec![&env, WINNER_NET]
+            || podium.get(0).ok_or(Error::Invalid)? >= t.roster.len()
+        {
             return Err(Error::Invalid);
-        }
-        let mut selected: Vec<u32> = Vec::new(&env);
-        for (index, amount) in podium.iter().zip(net.iter()) {
-            if index >= t.roster.len()
-                || selected.contains(&index)
-                || amount < i128::from(t.team_size)
-            {
-                return Err(Error::Invalid);
-            }
-            selected.push_back(index);
         }
         t.podium = podium;
         t.net = net;
@@ -311,13 +310,13 @@ impl SutikaCore {
     pub fn release(env: Env, id: BytesN<32>, place: u32, claimant: Address) -> Result<(), Error> {
         let mut t = read(&env, &id)?;
         claimant.require_auth();
-        if !(1..=3).contains(&place) {
+        if place != 1 {
             return Err(Error::Invalid);
         }
         if t.disputed {
             return Err(Error::Disputed);
         }
-        if !t.approved || t.podium.len() != 3 {
+        if !t.approved || t.podium.len() != 1 {
             return Err(Error::WrongPhase);
         }
         if env.ledger().timestamp() < t.release_at {
