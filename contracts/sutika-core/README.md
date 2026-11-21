@@ -1,12 +1,17 @@
-# Sutika Core
+# Contratos de SUTIKA
 
-Registro de torneos y reparto de premios en Stellar Testnet. El constructor fija el contrato del token. Cada torneo vincula el escrow a su identificador y a sus roles, congela las plantillas, registra un único ganador con un premio neto de 5 USDC e impone una ventana de impugnación de 24 horas. El proceso de liberación y el reparto se ejecutan en una sola transacción.
+Workspace Rust para Stellar Testnet. Ambos contratos usan Soroban SDK 29.0.1.
 
-Desde este directorio:
+| Contrato | Responsabilidad |
+| --- | --- |
+| [`sutika_core_v3`](contracts/sutika-core-v3) | Admite premios patrocinados, cuotas y pozos mixtos. Integra la custodia patrocinada con Trustless Work y guarda los aportes por inscripción. Aplica la ventana de impugnación de 24 horas y liquida el premio de cada puesto a una o cinco billeteras de la plantilla congelada. |
+| [`sutika_core`](contracts/sutika-core) | Contrato de la demo original, con premio configurable por torneo y fichas históricas en `/tournaments/[slug]`. |
+
+Ejecuta los comandos desde este directorio con Stellar CLI 30.0.1.
 
 ```sh
 cargo test --locked
 stellar contract build
 ```
 
-El toolchain de Rust está fijado en `rust-toolchain.toml`. Usa Stellar CLI 30.0.1. Consulta el [README del proyecto](../../README.md) para la arquitectura, la instancia desplegada y los comprobantes públicos.
+`rust-toolchain.toml` fija Rust 1.100.0 y el objetivo `wasm32v1-none`. GitHub Actions coteja los artefactos del build con los manifiestos de las instancias de Testnet. [Contrato original](../../src/lib/deployment.json) · [Contrato V3](../../src/lib/v3/deployment.json) · [Recorrido del jurado](../../README.md#demostración-para-el-jurado)

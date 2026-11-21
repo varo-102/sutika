@@ -20,7 +20,7 @@
 
 **Captación.** Llegaremos a capitanes, administradores y clubes universitarios por invitación directa. Con ellos buscaremos comercios que quieran patrocinar un piloto y pediremos expresiones de interés que podamos citar con permiso.
 
-**Validación.** Hay dos copas registradas en Stellar Testnet con enlaces públicos. En desarrollo V3 también confirmamos depósito y devolución de un aporte patrocinado de prueba. Todavía no hay pagos a ganadores en el nuevo recorrido, entrevistas citables, cartas de interés ni ingresos. El equipo busca entrevistar a 5–10 personas y obtener 3–5 expresiones de interés con permiso. [Modo Evaluador](https://sutika.vercel.app/evaluator)
+**Validación.** La demo pública muestra dos copas V3 en Stellar Testnet con depósitos y resultados aprobados. Hay comprobantes de devolución del patrocinio y de una cuota en ensayos separados. Quedan por verificar los pagos a ganadores. El equipo busca entrevistar a 5–10 personas y recoger 3–5 expresiones de interés que se puedan citar con permiso. [Modo Evaluador](https://sutika.vercel.app/evaluator) · [Validación comercial](https://github.com/varo-102/sutika/issues/3)
 
 ## Plan de 30 días
 
