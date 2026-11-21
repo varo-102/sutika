@@ -14,14 +14,14 @@ import {
   Zap,
 } from "lucide-react";
 import GameShowcase from "@/components/GameShowcase";
-import { listTournaments } from "@/lib/tournamentsService";
+import { publicTournaments } from "@/lib/publicTournaments";
 import { gameArt } from "@/lib/gameArt";
 import { games, gameOf, WINNER_USDC } from "@/lib/rules";
 import { deployment } from "@/lib/stellar";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const tournaments = await listTournaments().catch(() => null);
+  const { tournaments, live } = await publicTournaments();
   return (
     <>
       <section className="arena-hero" aria-labelledby="hero-heading">
@@ -113,71 +113,73 @@ export default async function Home() {
             Crear torneo
           </Link>
         </div>
-        {tournaments === null ? (
-          <p className="notice">
-            No pudimos consultar los torneos. Vuelve a cargar la página.
+        {!live && (
+          <p className="data-notice">
+            Mostramos los registros confirmados en Stellar. Los datos en vivo no
+            están disponibles.
           </p>
-        ) : tournaments.length === 0 ? (
-          <p className="notice">Todavía no hay torneos publicados.</p>
-        ) : (
-          <div className="tournament-list">
-            {tournaments.map((t) => {
-              const key = gameOf(t.category),
-                game = games[key],
-                art = gameArt[key];
-              const paid = t.prizes[0]?.claimStatus === "CLAIMED_VERIFIED",
-                funded = t.ledgerOperations.length > 0;
-              return (
-                <Link
-                  className="competition-card"
-                  href={"/tournaments/" + t.publicSlug}
-                  key={t.publicSlug}
-                >
-                  <div className="competition-art">
-                    <Image
-                      src={art.card}
-                      alt=""
-                      fill
-                      sizes="(max-width: 740px) 94vw, (max-width: 1180px) 48vw, 600px"
-                      quality={90}
-                    />
-                    <span className="format-tag">
-                      <Swords size={14} />
-                      {game.format}
+        )}
+        <div className="tournament-list">
+          {tournaments.map((t) => {
+            const key = gameOf(t.category),
+              game = games[key],
+              art = gameArt[key];
+            const paid = t.status === "paid",
+              funded = t.status === "funded";
+            return (
+              <Link
+                className="competition-card"
+                href={"/tournaments/" + t.publicSlug}
+                key={t.publicSlug}
+              >
+                <div className="competition-art">
+                  <Image
+                    src={art.card}
+                    alt=""
+                    fill
+                    sizes="(max-width: 740px) 94vw, (max-width: 1180px) 48vw, 600px"
+                    quality={90}
+                  />
+                  <span className="format-tag">
+                    <Swords size={14} />
+                    {game.format}
+                  </span>
+                </div>
+                <div className="competition-info">
+                  <p className="game-label">{game.name}</p>
+                  <h3>{t.name}</h3>
+                  <p className="entry-count">
+                    {t.participants === null
+                      ? "Registro verificable"
+                      : t.participants + " participantes"}{" "}
+                    <span>·</span> Torneo de prueba
+                  </p>
+                  <div className="competition-bottom">
+                    <div>
+                      <span className="reward">
+                        <Crown size={17} />
+                        {t.amount} USDC
+                      </span>
+                      <small>
+                        Primer puesto ·{" "}
+                        {paid
+                          ? "Pago confirmado"
+                          : funded
+                            ? "En custodia"
+                            : t.status === "unknown"
+                              ? "Consultar estado"
+                              : "Depósito pendiente"}
+                      </small>
+                    </div>
+                    <span className="card-cta">
+                      Ver torneo <ArrowRight size={16} />
                     </span>
                   </div>
-                  <div className="competition-info">
-                    <p className="game-label">{game.name}</p>
-                    <h3>{t.name}</h3>
-                    <p className="entry-count">
-                      {t._count.participants} participantes <span>·</span>{" "}
-                      Torneo de prueba
-                    </p>
-                    <div className="competition-bottom">
-                      <div>
-                        <span className="reward">
-                          <Crown size={17} />
-                          {String(t.prizes[0]?.amountUsdc ?? WINNER_USDC)} USDC
-                        </span>
-                        <small>
-                          Primer puesto ·{" "}
-                          {paid
-                            ? "Pago confirmado"
-                            : funded
-                              ? "En custodia"
-                              : "Depósito pendiente"}
-                        </small>
-                      </div>
-                      <span className="card-cta">
-                        Ver torneo <ArrowRight size={16} />
-                      </span>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        )}
+                </div>
+              </Link>
+            );
+          })}
+        </div>
       </section>
       <section className="sponsor-band">
         <div className="sponsor-symbol">

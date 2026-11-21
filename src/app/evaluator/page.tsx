@@ -22,7 +22,7 @@ import {
   Users,
 } from "lucide-react";
 import CopyValue from "@/components/CopyValue";
-import { listTournaments } from "@/lib/tournamentsService";
+import { publicTournaments } from "@/lib/publicTournaments";
 import {
   deployment,
   getExplorerContractUrl,
@@ -33,7 +33,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Guía del evaluador" };
 
 export default async function Evaluator() {
-  const tournaments = await listTournaments().catch(() => null);
+  const { tournaments, live } = await publicTournaments();
   return (
     <div className="eval-shell">
       <section className="eval-banner">
@@ -76,51 +76,54 @@ export default async function Evaluator() {
             <p>Elige una copa para ver su historial y el estado del premio.</p>
           </div>
         </div>
-        {tournaments?.length ? (
-          <div className="eval-tournaments">
-            {tournaments.map((t) => {
-              const g = games[gameOf(t.category)];
-              const paid = t.prizes[0]?.claimStatus === "CLAIMED_VERIFIED";
-              const funded = t.ledgerOperations.length > 0;
-              return (
-                <article key={t.publicSlug} className="eval-cup">
-                  <header>
-                    <span className="eval-game">
-                      {g.name} · {g.format}
-                    </span>
-                    <span
-                      className={
-                        "status-mark " +
-                        (paid || funded ? "positive" : "pending")
-                      }
-                    >
-                      <i />
-                      {paid ? "Pagado" : funded ? "En custodia" : "Por fondear"}
-                    </span>
-                  </header>
-                  <h3>{t.name}</h3>
-                  <p>
-                    {g.size === 1
-                      ? "5 USDC al ganador individual."
-                      : "5 USDC al equipo ganador, 1 por titular."}
-                  </p>
-                  <Link
-                    className="btn btn-outline"
-                    href={"/tournaments/" + t.publicSlug + "#historial"}
-                  >
-                    Ver historial <ArrowRight className="motion-arrow" />
-                  </Link>
-                </article>
-              );
-            })}
-          </div>
-        ) : (
-          <p className="notice">
-            {tournaments === null
-              ? "No se pudo consultar Neon."
-              : "Aún no hay torneos publicados."}
+        {!live && (
+          <p className="data-notice">
+            Los registros de las copas se verifican en Stellar. El saldo y el
+            pago requieren datos en vivo.
           </p>
         )}
+        <div className="eval-tournaments">
+          {tournaments.map((t) => {
+            const g = games[gameOf(t.category)];
+            const paid = t.status === "paid",
+              funded = t.status === "funded";
+            return (
+              <article key={t.publicSlug} className="eval-cup">
+                <header>
+                  <span className="eval-game">
+                    {g.name} · {g.format}
+                  </span>
+                  <span
+                    className={
+                      "status-mark " + (paid || funded ? "positive" : "pending")
+                    }
+                  >
+                    <i />
+                    {paid
+                      ? "Pagado"
+                      : funded
+                        ? "En custodia"
+                        : t.status === "unknown"
+                          ? "Registro público"
+                          : "Por fondear"}
+                  </span>
+                </header>
+                <h3>{t.name}</h3>
+                <p>
+                  {g.size === 1
+                    ? "5 USDC al ganador individual."
+                    : "5 USDC al equipo ganador, 1 por titular."}
+                </p>
+                <Link
+                  className="btn btn-outline"
+                  href={"/tournaments/" + t.publicSlug + "#historial"}
+                >
+                  Ver historial <ArrowRight className="motion-arrow" />
+                </Link>
+              </article>
+            );
+          })}
+        </div>
       </section>
       <section id="red" className="eval-block">
         <div className="block-heading">
@@ -296,7 +299,7 @@ export default async function Evaluator() {
         </div>
         <a
           className="inline-link"
-          href="https://github.com/varo-102/sutika/pull/6"
+          href="https://github.com/varo-102/sutika"
           target="_blank"
           rel="noreferrer"
         >

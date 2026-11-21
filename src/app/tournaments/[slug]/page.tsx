@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import PublicRegistration from "@/components/PublicRegistration";
 import {
   ArrowLeft,
   BadgeCheck,
@@ -51,9 +52,18 @@ export default async function TournamentPage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  const { slug } = await params,
+  const { slug } = await params;
+  let t: Awaited<ReturnType<typeof getTournament>>;
+  try {
     t = await getTournament(slug);
-  if (!t) notFound();
+  } catch {
+    return <PublicRegistration slug={slug} />;
+  }
+  if (!t) {
+    if (deployment.registrations.some((r) => r.slug === slug))
+      return <PublicRegistration slug={slug} />;
+    notFound();
+  }
   const confirmed = t.ledgerOperations.filter((o) =>
     ["CONFIRMED", "SUPERSEDED"].includes(o.status),
   );

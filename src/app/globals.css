@@ -1612,3 +1612,13 @@ form button {
     background: #4bd19a;
   }
 }
+
+.data-notice {
+  margin: 0 0 1rem;
+  padding: 0.7rem 0.9rem;
+  border-left: 2px solid var(--violet);
+  border-radius: 4px;
+  background: #211f30;
+  color: #c5bfd8;
+  font-size: 0.84rem;
+}

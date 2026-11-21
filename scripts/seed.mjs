@@ -2,17 +2,13 @@ import { createHash } from "node:crypto";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 import deployment from "../src/lib/deployment.json" with { type: "json" };
-import { WINNER_USDC } from "../src/lib/rules.ts";
+import { games, WINNER_USDC } from "../src/lib/rules.ts";
 
 if (!process.env.DATABASE_URL) throw new Error("Falta DATABASE_URL.");
 const db = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
 });
 const previousCore = "CDP6M3LLHZPXFAWM7O2I6ZQHG2WYSRY6GCNNJZYDXDZSNZKGBWAYAI57";
-const demos = [
-  ["demo-clash-royale", "Copa de la Corona", "CLASH_ROYALE", 1],
-  ["demo-mobile-legends", "Copa del Alba", "MOBILE_LEGENDS", 5],
-];
 
 try {
   await db.$transaction(
@@ -26,7 +22,8 @@ try {
           stellarSmartWalletAddress: deployment.deployer,
         },
       });
-      for (const [slug, name, category, size] of demos) {
+      for (const { slug, name, game: category } of deployment.registrations) {
+        const size = games[category].size;
         const previous = await tx.tournament.findUnique({
           where: { publicSlug: slug },
           include: {

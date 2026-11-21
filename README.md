@@ -6,7 +6,7 @@ Sutika permite que un patrocinador boliviano fondee premios en USDC de Stellar T
 
 La portada alterna ilustraciones originales del duelo de torres y del combate 5v5. El carrusel admite pausa, teclado y movimiento reducido.
 
-Abre **Modo evaluador** en la vista previa del PR o en `/evaluator` al ejecutar la aplicación. Las dos copas identificadas como «de prueba» son escenarios técnicos. Su inscripción y pago no cuentan como tracción comercial. La aplicación muestra el estado que acreditan Neon y Stellar.
+Abre **Modo evaluador** en la vista previa del PR o en `/evaluator` al ejecutar la aplicación. Las dos copas identificadas como «de prueba» son escenarios técnicos. Su inscripción y pago no cuentan como tracción comercial. La aplicación muestra el estado que acreditan Neon y Stellar. Si Neon está temporalmente inaccesible, el evaluador sigue ofreciendo los dos registros confirmados del contrato. Los datos de inscripción, custodia y pago se presentan como desconocidos hasta que se restablece la lectura.
 
 | Evidencia de Testnet | Identificador público |
 | --- | --- |

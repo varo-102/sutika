@@ -10,5 +10,19 @@
   "platform": "GDVDSFC5YUYZAST2JKAMT337B2CBTTCBOUWCKQJCI5YBSRHVNZ6LI3FX",
   "resolver": "GD5EHUNFERXSGKOTXTFQLGVTLUZ3XAYYDWTHXBPHQNLKKJQUGLN73WHN",
   "admin": "GDAOKCOOGVDF2LYKVWKV7PL7YOSSLZTCRATYH2FU5ABQR3EVZWNBQZHK",
-  "demoSponsor": "GA7JQ4M7YODVKQVTQGZ2J24CNFQZZQNQCRINEPQY3S22BMU223EUVOFE"
+  "demoSponsor": "GA7JQ4M7YODVKQVTQGZ2J24CNFQZZQNQCRINEPQY3S22BMU223EUVOFE",
+  "registrations": [
+    {
+      "slug": "demo-clash-royale",
+      "name": "Copa de la Corona",
+      "game": "CLASH_ROYALE",
+      "tx": "5a4bab909fc45b02928cd981057822ddf65f8e6a0709ef5e4ded24b1ec7b6c77"
+    },
+    {
+      "slug": "demo-mobile-legends",
+      "name": "Copa del Alba",
+      "game": "MOBILE_LEGENDS",
+      "tx": "79844f95778626c03242355d4758f9bfd557fb5ad301dda170b3c4d18d07734c"
+    }
+  ]
 }
