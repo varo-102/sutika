@@ -3,8 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
-import { Award, CirclePlus, ExternalLink, Menu, X } from "lucide-react";
-import { getExplorerContractUrl } from "@/lib/stellar";
+import { Award, BookOpen, CirclePlus, Menu, X } from "lucide-react";
 
 export default function Navbar() {
   const path = usePathname(),
@@ -55,14 +54,13 @@ export default function Navbar() {
             <Award size={16} />
             Modo evaluador
           </Link>
-          <a
-            href={getExplorerContractUrl()}
-            target="_blank"
-            rel="noreferrer"
+          <Link
+            href="/guia"
+            aria-current={path === "/guia" ? "page" : undefined}
             onClick={dismiss}
           >
-            Contrato en Explorer <ExternalLink size={13} />
-          </a>
+            <BookOpen size={16} /> Cómo funciona
+          </Link>
         </nav>
         <div className="nav-actions">
           <Link

@@ -1622,3 +1622,200 @@ form button {
   color: #c5bfd8;
   font-size: 0.84rem;
 }
+
+.tournament-editor {
+  display: grid;
+  grid-template-columns: 1.12fr 1fr;
+  grid-template-areas: "draft prize" "signing prize";
+  gap: 1.2rem;
+  align-items: start;
+}
+.tournament-draft {
+  grid-area: draft;
+}
+.tournament-signing {
+  grid-area: signing;
+}
+.tournament-editor form {
+  margin: 0;
+}
+.prize-review,
+.review-draft {
+  min-width: 0;
+}
+.prize-review {
+  grid-area: prize;
+  padding: 1rem;
+  border: 1px solid #52482c;
+  border-radius: 10px;
+  background: linear-gradient(150deg, #27251e, #151a21);
+}
+.prize-review h3 {
+  color: var(--gold);
+  font-size: 1.8rem;
+  margin: 0.35rem 0;
+}
+.prize-review p,
+.review-draft p {
+  font-size: 0.86rem;
+}
+.prize-review dl {
+  margin: 1rem 0 0.7rem;
+}
+.prize-review dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.65rem;
+  font-size: 0.77rem;
+  margin: 0.3rem 0;
+}
+.prize-review dt {
+  color: var(--muted);
+}
+.prize-review dd {
+  white-space: nowrap;
+}
+.prize-review .review-total {
+  display: grid;
+  border-top: 1px solid #453d2c;
+  padding-top: 0.6rem;
+  margin-top: 0.6rem;
+  font-size: 0.84rem;
+}
+.review-total dd {
+  color: var(--gold);
+  font-weight: 700;
+}
+.review-draft h3 {
+  font-size: 1.3rem;
+  overflow-wrap: anywhere;
+}
+.edit-review {
+  margin: 0.6rem 0 0.9rem;
+}
+@media (max-width: 640px) {
+  .tournament-editor {
+    grid-template-columns: 1fr;
+    grid-template-areas: "draft" "prize" "signing";
+  }
+}
+
+.guide-preview,
+.guide-role {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  padding: 1.25rem;
+}
+.guide-preview {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+.guide-preview > svg,
+.guide-role h2 svg {
+  width: 1.2rem;
+  height: 1.2rem;
+  color: var(--gold);
+  flex: none;
+}
+.guide-preview > div {
+  flex: 1 1 260px;
+}
+.guide-preview h2 {
+  font-size: 1rem;
+}
+.guide-preview p {
+  font-size: 0.86rem;
+  margin-top: 0.18rem;
+}
+.guide-roles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+.guide-role {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  gap: 0.75rem;
+  scroll-margin-top: 6rem;
+}
+.guide-role h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 1.12rem;
+}
+.guide-role ol {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0;
+  padding-left: 1.2rem;
+  list-style: decimal;
+  color: var(--muted);
+}
+.guide-role li {
+  padding-left: 0.2rem;
+}
+.guide-role li::marker {
+  color: var(--gold);
+  font-weight: 700;
+}
+.guide-role .inline-link {
+  margin-top: auto;
+  padding-top: 0.3rem;
+}
+.user-guide #cuenta,
+#participar {
+  scroll-margin-top: 6rem;
+}
+.user-guide #cuenta .buttons,
+.tournament-choices {
+  margin-top: 1rem;
+}
+.share-tournament {
+  display: grid;
+  align-items: start;
+  justify-items: start;
+  gap: 0.3rem;
+}
+.share-tournament input {
+  width: min(20rem, 100%);
+}
+.prize-summary h2 small {
+  display: inline;
+  font-size: 0.37em;
+  color: var(--muted);
+}
+.wallet-access .buttons {
+  margin-top: 0.7rem;
+}
+.wallet-access > .text-action {
+  margin-top: 0.7rem;
+}
+.wallet-access [role="alert"] {
+  color: #ffc3b7;
+}
+.field-note {
+  display: block;
+  color: var(--muted);
+  font-size: 0.81rem;
+}
+.form-field {
+  display: grid;
+  gap: 0.35rem;
+}
+.tournament-editor form.review-signature {
+  margin-top: 0.65rem;
+}
+@media (max-width: 860px) {
+  .guide-roles {
+    grid-template-columns: 1fr;
+  }
+  .guide-role ol {
+    max-width: 65ch;
+  }
+}

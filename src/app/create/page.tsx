@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft, CirclePlus, Crown } from "lucide-react";
-import WalletActions from "@/components/WalletActions";
+import CreateTournamentForm from "@/components/CreateTournamentForm";
 export const metadata = { title: "Nuevo torneo" };
 export default function Create() {
   return (
@@ -20,8 +20,8 @@ export default function Create() {
           </div>
         </div>
         <p>
-          Elige el juego y la billetera del patrocinador. Las inscripciones son
-          gratuitas y el primer puesto recibe 5 USDC de prueba.
+          Elige el juego, ponle un nombre y revisa el premio. Puedes preparar la
+          ficha antes de conectar tu cuenta de prueba.
         </p>
       </header>
       <section className="panel">
@@ -31,7 +31,7 @@ export default function Create() {
           </span>
           <h2>Configurar la competencia</h2>
         </div>
-        <WalletActions />
+        <CreateTournamentForm />
       </section>
     </div>
   );

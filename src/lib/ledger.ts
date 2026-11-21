@@ -18,12 +18,12 @@ import { Prisma } from "@prisma/client";
 import { database } from "./prisma";
 import { getTournament, details } from "./tournamentsService";
 import { shortText, wallet, type ActionInput } from "./auth";
-import { deployment, SUTIKA_CONTRACT_ID } from "./stellar";
+import { deployment, SUTIKA_CONTRACT_ID, TESTNET_RPC_URL } from "./stellar";
 import { display, split, units, WINNER_FUNDING, WINNER_UNITS } from "./rules";
 
 const network = Networks.TESTNET;
 const usdc = deployment.usdc;
-const server = () => new rpc.Server("https://soroban-testnet.stellar.org");
+const server = () => new rpc.Server(TESTNET_RPC_URL);
 const addressVal = (s: string) => Address.fromString(s).toScVal();
 const u32 = (n: number) => xdr.ScVal.scvU32(n);
 const bytes = (hex: string) => xdr.ScVal.scvBytes(Buffer.from(hex, "hex"));

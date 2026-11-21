@@ -1,5 +1,6 @@
 import deployment from "./deployment.json";
 export { deployment };
+export const TESTNET_RPC_URL = "https://soroban-testnet.stellar.org";
 export const SUTIKA_CONTRACT_ID = deployment.contractId;
 export const getExplorerTxUrl = (hash: string) =>
   "https://stellar.expert/explorer/testnet/tx/" + encodeURIComponent(hash);

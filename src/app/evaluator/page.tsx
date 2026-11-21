@@ -22,18 +22,29 @@ import {
   Users,
 } from "lucide-react";
 import CopyValue from "@/components/CopyValue";
-import { publicTournaments } from "@/lib/publicTournaments";
+import { publicTournaments, publishedDemos } from "@/lib/publicTournaments";
 import {
   deployment,
   getExplorerContractUrl,
   getExplorerTxUrl,
 } from "@/lib/stellar";
 import { games, gameOf } from "@/lib/rules";
+import { testnetProtocol } from "@/lib/testnetProtocol";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Guía del evaluador" };
 
 export default async function Evaluator() {
-  const { tournaments, live } = await publicTournaments();
+  const [{ tournaments }, protocol] = await Promise.all([
+    publicTournaments(),
+    testnetProtocol(),
+  ]);
+  const demos = publishedDemos.map(
+    (demo) =>
+      tournaments.find(
+        (tournament) => tournament.publicSlug === demo.publicSlug,
+      ) ?? demo,
+  );
+  const live = demos.every((demo) => demo.status !== "unknown");
   return (
     <div className="eval-shell">
       <section className="eval-banner">
@@ -47,9 +58,9 @@ export default async function Evaluator() {
           </div>
         </div>
         <p>
-          Comprueba el registro del torneo, el depósito en custodia y el pago de{" "}
-          <strong>5 USDC al primer puesto</strong>. Cada etapa tiene su propio
-          comprobante en Stellar Testnet.
+          Abre los registros de las dos copas en Stellar Testnet. Cada una
+          muestra el estado de su premio de{" "}
+          <strong>5 USDC de prueba para el primer puesto</strong>.
         </p>
         <div className="buttons">
           <a className="btn btn-gold" href="#torneos-de-prueba">
@@ -62,7 +73,7 @@ export default async function Evaluator() {
             target="_blank"
             rel="noreferrer"
           >
-            Auditar contrato <ExternalLink size={16} />
+            Ver contrato en Stellar <ExternalLink size={16} />
           </a>
         </div>
       </section>
@@ -83,7 +94,7 @@ export default async function Evaluator() {
           </p>
         )}
         <div className="eval-tournaments">
-          {tournaments.map((t) => {
+          {demos.map((t) => {
             const g = games[gameOf(t.category)];
             const paid = t.status === "paid",
               funded = t.status === "funded";
@@ -105,7 +116,7 @@ export default async function Evaluator() {
                         ? "En custodia"
                         : t.status === "unknown"
                           ? "Registro público"
-                          : "Por fondear"}
+                          : "Depósito pendiente"}
                   </span>
                 </header>
                 <h3>{t.name}</h3>
@@ -125,6 +136,19 @@ export default async function Evaluator() {
           })}
         </div>
       </section>
+      <aside className="guide-preview">
+        <BookOpen aria-hidden="true" />
+        <div>
+          <h2>Recorrido de la demo</h2>
+          <p>
+            Prepara una ficha, revisa el premio y abre el comprobante del
+            registro.
+          </p>
+        </div>
+        <Link href="/guia" className="btn btn-outline">
+          Abrir guía <ArrowRight />
+        </Link>
+      </aside>
       <section id="red" className="eval-block">
         <div className="block-heading">
           <span className="accent-icon violet">
@@ -177,14 +201,18 @@ export default async function Evaluator() {
               Red y protocolo
             </h3>
             <strong className="technical-value">
-              Stellar Testnet Protocol {deployment.protocol}
+              Stellar Testnet Protocol {protocol ?? deployment.protocol}
             </strong>
+            <p>
+              {protocol === null
+                ? "Protocolo al desplegar el contrato."
+                : "Red consultada en vivo."}
+            </p>
             <details className="network-history">
-              <summary>Referencia del prototipo</summary>
+              <summary>Stellar Testnet Protocol 22 · prototipo</summary>
               <p>
-                La primera web de Álvaro decía «Stellar Testnet Protocol 22». El
-                despliegue de esta versión usa el protocolo{" "}
-                {deployment.protocol}.
+                La primera web de Álvaro mostraba esa versión. El despliegue de
+                esta versión usa el protocolo {deployment.protocol}.
               </p>
             </details>
           </article>
@@ -262,7 +290,8 @@ export default async function Evaluator() {
             <div>
               <h3>Custodia</h3>
               <p>
-                Trustless Work mantiene el pozo hasta la liberación autorizada.
+                El premio queda en Trustless Work cuando Stellar confirma el
+                depósito. El historial muestra ese comprobante por separado.
               </p>
             </div>
           </div>
@@ -271,8 +300,8 @@ export default async function Evaluator() {
             <div>
               <h3>Firma de billetera</h3>
               <p>
-                Pollar permite al participante acreditar que controla la cuenta
-                que reclama.
+                La firma con Freighter o Pollar acredita que el participante
+                controla la cuenta que reclama.
               </p>
             </div>
           </div>

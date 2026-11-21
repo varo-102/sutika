@@ -40,7 +40,9 @@ export default function PublicRegistration({ slug }: { slug: string }) {
             <Trophy />
             Premio previsto para el primer puesto
           </p>
-          <h2 id="premio">5 USDC</h2>
+          <h2 id="premio">
+            5 USDC <small>de prueba</small>
+          </h2>
           <p>
             {game.size === 5
               ? "1 USDC por titular del equipo ganador."

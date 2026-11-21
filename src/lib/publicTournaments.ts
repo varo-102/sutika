@@ -13,6 +13,16 @@ export type CompetitionSummary = {
   status: PrizeStatus;
 };
 
+export const publishedDemos: CompetitionSummary[] =
+  deployment.registrations.map((t) => ({
+    publicSlug: t.slug,
+    name: t.name,
+    category: gameOf(t.game),
+    participants: null,
+    amount: WINNER_USDC,
+    status: "unknown",
+  }));
+
 export async function publicTournaments(): Promise<{
   live: boolean;
   tournaments: CompetitionSummary[];
@@ -29,9 +39,12 @@ export async function publicTournaments(): Promise<{
           participants: t._count.participants,
           amount: Number(t.prizes[0]?.amountUsdc ?? WINNER_USDC),
           status:
-            t.prizes[0]?.claimStatus === "CLAIMED_VERIFIED"
+            t.prizes[0]?.claimStatus === "CLAIMED_VERIFIED" &&
+            t.ledgerOperations.some((operation) => operation.kind === "release")
               ? "paid"
-              : t.ledgerOperations.length
+              : t.ledgerOperations.some(
+                    (operation) => operation.kind === "fund",
+                  )
                 ? "funded"
                 : "unfunded",
         })),
@@ -41,13 +54,6 @@ export async function publicTournaments(): Promise<{
   }
   return {
     live: false,
-    tournaments: deployment.registrations.map((t) => ({
-      publicSlug: t.slug,
-      name: t.name,
-      category: gameOf(t.game),
-      participants: null,
-      amount: WINNER_USDC,
-      status: "unknown",
-    })),
+    tournaments: publishedDemos,
   };
 }

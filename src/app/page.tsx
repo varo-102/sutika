@@ -194,9 +194,14 @@ export default async function Home() {
             datos personales al público.
           </p>
         </div>
-        <Link href="/create" className="btn btn-purple">
-          Crear torneo <ArrowRight className="motion-arrow" />
-        </Link>
+        <div className="buttons">
+          <Link href="/guia" className="btn btn-outline">
+            Cómo funciona
+          </Link>
+          <Link href="/create" className="btn btn-purple">
+            Crear torneo <ArrowRight className="motion-arrow" />
+          </Link>
+        </div>
       </section>
     </>
   );

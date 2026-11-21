@@ -56,9 +56,8 @@ export async function listTournaments() {
         select: { amountUsdc: true, claimStatus: true },
       },
       ledgerOperations: {
-        where: { kind: "fund", status: "CONFIRMED" },
-        select: { id: true },
-        take: 1,
+        where: { kind: { in: ["fund", "release"] }, status: "CONFIRMED" },
+        select: { kind: true },
       },
     },
   });

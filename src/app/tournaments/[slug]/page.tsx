@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import PublicRegistration from "@/components/PublicRegistration";
@@ -17,6 +18,7 @@ import {
   Users,
 } from "lucide-react";
 import WalletActions from "@/components/WalletActions";
+import ShareTournament from "@/components/ShareTournament";
 import ReceiptStatus from "@/components/ReceiptStatus";
 import { getTournament } from "@/lib/tournamentsService";
 import {
@@ -101,7 +103,19 @@ export default async function TournamentPage({
     paid = prize?.claimStatus === "CLAIMED_VERIFIED" && !!observed("release");
   const winningTeam = t.teams.find((tm) => tm.id === t.podium[0]);
   const published = observed("declare")?.confirmedAt;
-  const process = [
+  const claimAt = published ? published.getTime() + 86_400_000 : null;
+  const registered = !!observed("anchor");
+  const tagsFor = (team: (typeof t.teams)[number]) =>
+    team.participants.flatMap(({ user }) =>
+      user.stellarSmartWalletAddress
+        ? [
+            createHash("sha256")
+              .update(slug + "\n" + user.stellarSmartWalletAddress)
+              .digest("hex"),
+          ]
+        : [],
+    );
+  const milestones = [
     { kind: "anchor", name: "Registro", icon: Flag },
     { kind: "fund", name: "Depósito", icon: LockKeyhole },
     { kind: "approve", name: "Ganador confirmado", icon: BadgeCheck },
@@ -119,9 +133,24 @@ export default async function TournamentPage({
         </p>
         <h1>{t.name}</h1>
         <p>
-          {t.rosterLocked ? "Inscripciones cerradas" : "Inscripciones abiertas"}{" "}
-          · Stellar Testnet
+          {t.rosterLocked
+            ? "Inscripciones cerradas"
+            : registered
+              ? "Inscripción gratuita"
+              : "Registro en Stellar pendiente"}{" "}
+          · Red de prueba
         </p>
+        <div className="buttons tournament-choices">
+          <a className="btn btn-gold" href="#participar">
+            {registered && !t.rosterLocked
+              ? "Inscribirme"
+              : "Ver opciones de mi cuenta"}
+          </a>
+          <a className="btn btn-outline" href="#historial">
+            Ver estado del premio
+          </a>
+          {registered && <ShareTournament />}
+        </div>
       </header>
       <section className="prize-summary" aria-labelledby="premio">
         <div>
@@ -129,7 +158,9 @@ export default async function TournamentPage({
             <Crown />
             Premio al primer puesto
           </p>
-          <h2 id="premio">{WINNER_USDC} USDC</h2>
+          <h2 id="premio">
+            {WINNER_USDC} USDC <small>de prueba</small>
+          </h2>
           <p>
             {game.size === 5
               ? "1 USDC por cada uno de los cinco titulares ganadores."
@@ -172,7 +203,7 @@ export default async function TournamentPage({
           </div>
         </div>
         <ol className="payout-progress">
-          {process.map(({ kind, name, icon: Icon }) => {
+          {milestones.map(({ kind, name, icon: Icon }) => {
             const record = observed(kind);
             return (
               <li key={kind} className={record ? "done" : ""}>
@@ -264,23 +295,28 @@ export default async function TournamentPage({
           ) : (
             <p>Aún no hay participantes inscritos.</p>
           )}
-          {published && (
+          {claimAt !== null && !paid && (
             <p>
-              <Clock3 size={15} /> Plazo de impugnación hasta{" "}
-              {new Date(published.getTime() + 86_400_000).toLocaleString(
-                "es-BO",
-                { timeZone: "America/La_Paz" },
-              )}
+              <Clock3 size={15} /> Puedes pedir una revisión hasta el{" "}
+              {new Date(claimAt).toLocaleString("es-BO", {
+                timeZone: "America/La_Paz",
+              })}
               , hora de Bolivia.
             </p>
           )}
         </section>
-        <section className="panel">
+        <section className="panel" id="participar">
           <div className="block-heading">
             <span className="accent-icon">
               <Coins />
             </span>
-            <h2>Participar y gestionar</h2>
+            <div>
+              <h2>Tu cuenta en este torneo</h2>
+              <p>
+                Conéctala para inscribirte, gestionar el torneo o cobrar si
+                ganas.
+              </p>
+            </div>
           </div>
           <WalletActions
             slug={slug}
@@ -293,7 +329,13 @@ export default async function TournamentPage({
             organizer={t.organizer.stellarSmartWalletAddress ?? ""}
             sponsor={t.sponsorWallet ?? ""}
             resolver={t.resolverWallet ?? ""}
-            frozen={t.rosterLocked}
+            confirmed={confirmed
+              .filter((operation) => operation.status === "CONFIRMED")
+              .map((operation) => operation.kind)}
+            memberTags={t.teams.flatMap(tagsFor)}
+            winnerTags={winningTeam ? tagsFor(winningTeam) : []}
+            claimAt={claimAt}
+            escrowEnabled={!!process.env.TRUSTLESS_WORK_API_KEY}
           />
         </section>
       </div>
