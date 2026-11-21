@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { localized, translate, type Locale } from "@/lib/locale";
 import { ArrowLeft, ExternalLink, Flag, Trophy } from "lucide-react";
 import {
   deployment,
@@ -7,17 +8,18 @@ import {
 } from "@/lib/stellar";
 import { games, gameOf } from "@/lib/rules";
 
-export default function PublicRegistration({ slug }: { slug: string }) {
+export default function PublicRegistration({ slug, locale = "es" }: { slug: string; locale?: Locale }) {
+  const tr = translate(locale);
   const registration = deployment.registrations.find((r) => r.slug === slug);
   if (!registration)
     return (
       <section className="narrow">
-        <Link className="inline-link" href="/#torneos">
+        <Link className="inline-link" href={localized(locale, "/#torneos")}>
           <ArrowLeft />
-          Volver a torneos
+          {tr("Volver a torneos", "Back to tournaments")}
         </Link>
-        <h1>Datos del torneo no disponibles</h1>
-        <p>Vuelve a intentarlo cuando se restablezca la conexión.</p>
+        <h1>{tr("Datos del torneo no disponibles", "Tournament data unavailable")}</h1>
+        <p>{tr("Vuelve a intentarlo cuando se restablezca la conexión.", "Try again when the connection is restored.")}</p>
       </section>
     );
   const game = games[gameOf(registration.game)];
@@ -26,27 +28,27 @@ export default function PublicRegistration({ slug }: { slug: string }) {
       <header className="heading tournament-heading">
         <Link href="/#torneos">
           <ArrowLeft size={16} />
-          Volver a torneos
+          {tr("Volver a torneos", "Back to tournaments")}
         </Link>
         <p className="eyebrow">
           {game.name} · {game.format}
         </p>
         <h1>{registration.name}</h1>
-        <p>Registro confirmado en Stellar Testnet.</p>
+        <p>{tr("Registro confirmado en Stellar Testnet.", "Registration confirmed on Stellar Testnet.")}</p>
       </header>
       <section className="prize-summary">
         <div>
           <p className="eyebrow">
             <Trophy />
-            Premio previsto para el primer puesto
+            {tr("Premio previsto para el primer puesto", "Planned first-place prize")}
           </p>
           <h2 id="premio">
-            5 USDC <small>de prueba</small>
+            5 USDC <small>{tr("de prueba", "test funds")}</small>
           </h2>
           <p>
             {game.size === 5
-              ? "1 USDC por titular del equipo ganador."
-              : "5 USDC al jugador ganador."}
+              ? tr("1 USDC por titular del equipo ganador.", "1 test USDC for each winning player.")
+              : tr("5 USDC al jugador ganador.", "5 test USDC for the winner.")}
           </p>
         </div>
       </section>
@@ -55,12 +57,10 @@ export default function PublicRegistration({ slug }: { slug: string }) {
           <span className="accent-icon violet">
             <Flag />
           </span>
-          <h2>Registro del torneo</h2>
+          <h2>{tr("Registro del torneo", "Tournament registration")}</h2>
         </div>
         <p className="data-notice">
-          Los datos en vivo no están disponibles. Puedes verificar el registro
-          público; los inscritos, el depósito y el pago todavía requieren
-          consulta en vivo.
+          {tr("Los datos en vivo no están disponibles. Puedes verificar el registro público.", "Live details are unavailable. You can verify the public registration.")}
         </p>
         <div className="buttons">
           <a
@@ -69,7 +69,7 @@ export default function PublicRegistration({ slug }: { slug: string }) {
             rel="noreferrer"
             href={getExplorerTxUrl(registration.tx)}
           >
-            Ver registro en Stellar <ExternalLink />
+            {tr("Ver registro en Stellar", "View registration on Stellar")} <ExternalLink />
           </a>
           <a
             className="btn btn-dark"
@@ -77,7 +77,7 @@ export default function PublicRegistration({ slug }: { slug: string }) {
             rel="noreferrer"
             href={getExplorerContractUrl()}
           >
-            Abrir contrato <ExternalLink />
+            {tr("Abrir contrato", "Open contract")} <ExternalLink />
           </a>
         </div>
       </section>

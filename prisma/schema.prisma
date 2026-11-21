@@ -214,3 +214,66 @@ model LedgerOperation {
   @@index([tournamentId, kind, slot, status])
   @@map("ledger_operations")
 }
+model CompetitionV3 {
+  id         String   @id @db.VarChar(64)
+  slug       String   @unique @db.VarChar(96)
+  name       String   @db.VarChar(60)
+  game       String   @db.VarChar(24)
+  rules      Json
+  contractId String   @map("contract_id") @db.VarChar(56)
+  anchoredAt DateTime? @map("anchored_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  operations    CompetitionOperationV3[]
+  contributions EntryFeeContribution[]
+
+  @@index([anchoredAt])
+  @@map("competitions_v3")
+}
+
+model CompetitionOperationV3 {
+  id            String   @id @default(uuid()) @db.Uuid
+  competitionId String   @map("competition_id") @db.VarChar(64)
+  kind          String   @db.VarChar(30)
+  actor         String   @db.VarChar(56)
+  intent        String   @db.VarChar(64)
+  hash          String   @unique @db.VarChar(64)
+  unsignedXdr   String   @map("unsigned_xdr")
+  context       Json
+  status        String   @default("PREPARED") @db.VarChar(12)
+  expiresAt     DateTime @map("expires_at")
+  confirmedAt   DateTime? @map("confirmed_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  competition CompetitionV3 @relation(fields: [competitionId], references: [id])
+
+  @@index([competitionId, status, createdAt])
+  @@index([competitionId, actor, intent, status])
+  @@map("competition_operations_v3")
+}
+
+model EntryFeeContribution {
+  competitionId String   @map("competition_id") @db.VarChar(64)
+  teamId        String   @map("team_id") @db.VarChar(64)
+  payer         String   @db.VarChar(56)
+  stroops       BigInt
+  paymentHash   String   @unique @map("payment_hash") @db.VarChar(64)
+  refundHash    String?  @unique @map("refund_hash") @db.VarChar(64)
+  paidAt        DateTime @map("paid_at")
+  refundedAt    DateTime? @map("refunded_at")
+
+  competition CompetitionV3 @relation(fields: [competitionId], references: [id])
+
+  @@id([competitionId, teamId])
+  @@map("entry_fee_contributions")
+}
+
+model SandboxVerification {
+  subject    String   @id @db.Uuid
+  wallet     String   @unique @db.VarChar(56)
+  applicant  String?  @unique @db.VarChar(64)
+  status     String   @default("PENDING") @db.VarChar(12)
+  reviewedAt DateTime? @map("reviewed_at")
+
+  @@map("sandbox_verifications")
+}

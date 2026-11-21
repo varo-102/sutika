@@ -1,0 +1,86 @@
+[
+  {
+    "id": "sponsored-deposit",
+    "hash": "70cd45c566019c75a84f91ed07c554d5e537e57c3bd26dd93fdd2f4b3699e670",
+    "es": {
+      "title": "Aporte patrocinado",
+      "text": "5,1440328 USDC de prueba depositados en Trustless Work.",
+      "action": "Ver depósito"
+    },
+    "en": {
+      "title": "Sponsored contribution",
+      "text": "5.1440328 test USDC deposited into Trustless Work.",
+      "action": "View deposit"
+    }
+  },
+  {
+    "id": "sponsored-refund",
+    "hash": "ec4f35f864dc09a5736da68027eea26b462532a1c050dad7da11a8012771e4a3",
+    "es": {
+      "title": "Devolución al patrocinador",
+      "text": "5 USDC de prueba devueltos tras cancelar la copa.",
+      "action": "Ver devolución"
+    },
+    "en": {
+      "title": "Sponsor refund",
+      "text": "5 test USDC returned after the tournament was canceled.",
+      "action": "View refund"
+    }
+  },
+  {
+    "id": "team-entry",
+    "hash": "d0fc4c632edb79b3aac652d3f59320f0648c26b5b7f24a0b3bb88266c452d799",
+    "es": {
+      "title": "Inscripción de equipo",
+      "text": "El capitán aportó 0,25 USDC de prueba.",
+      "action": "Ver inscripción"
+    },
+    "en": {
+      "title": "Team entry",
+      "text": "The captain contributed 0.25 test USDC.",
+      "action": "View entry"
+    }
+  },
+  {
+    "id": "team-refund",
+    "hash": "0991f942c719fbd3df6a8233c59665a6b95ef09eaa072a8459150b8b3648c472",
+    "es": {
+      "title": "Reembolso de la cuota",
+      "text": "La billetera que pagó recibió de vuelta los 0,25 USDC de prueba.",
+      "action": "Ver reembolso"
+    },
+    "en": {
+      "title": "Entry fee refund",
+      "text": "The original wallet received its 0.25 test USDC back.",
+      "action": "View refund"
+    }
+  },
+  {
+    "id": "clash-result",
+    "hash": "90ba69c3f61071861983685c768cd975a7b9864e9b037118d34c1c99c8dfe423",
+    "es": {
+      "title": "Resultado 1v1",
+      "text": "Resultado de Clash Royale con cuatro jugadores registrado en Stellar.",
+      "action": "Ver resultado 1v1"
+    },
+    "en": {
+      "title": "1v1 result",
+      "text": "The four-player Clash Royale result was recorded on Stellar.",
+      "action": "View 1v1 result"
+    }
+  },
+  {
+    "id": "mobile-result",
+    "hash": "58bac18d26afd5c4a40950135cbfb370e3992f6d19bd40a4269a7bb3c084b3f7",
+    "es": {
+      "title": "Resultado 5v5",
+      "text": "Resultado de Mobile Legends con cuatro equipos registrado en Stellar.",
+      "action": "Ver resultado 5v5"
+    },
+    "en": {
+      "title": "5v5 result",
+      "text": "The four-team Mobile Legends result was recorded on Stellar.",
+      "action": "View 5v5 result"
+    }
+  }
+]

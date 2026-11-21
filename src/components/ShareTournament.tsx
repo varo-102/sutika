@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { Link2 } from "lucide-react";
+import { translate, type Locale } from "@/lib/locale";
 
-export default function ShareTournament() {
+export default function ShareTournament({ team, locale = "es" }: { team?: string; locale?: Locale }) {
+  const t = translate(locale);
   const [notice, setNotice] = useState("");
   const [link, setLink] = useState("");
 
@@ -11,24 +13,25 @@ export default function ShareTournament() {
     const url = new URL(window.location.href);
     url.hash = "";
     url.search = "";
+    if (team) url.searchParams.set("equipo", team);
     try {
       await navigator.clipboard.writeText(url.href);
-      setNotice("Enlace copiado.");
+      setNotice(t("Enlace copiado.", "Link copied."));
     } catch {
       setLink(url.href);
-      setNotice("Selecciona el enlace y cópialo.");
+      setNotice(t("Selecciona el enlace y cópialo.", "Select the link and copy it."));
     }
   }
 
   return (
     <div className="share-tournament">
       <button className="btn btn-outline" type="button" onClick={copy}>
-        <Link2 /> Copiar invitación
+        <Link2 /> {team ? t("Invitar al equipo", "Invite teammates") : t("Copiar enlace", "Copy link")}
       </button>
       {notice && <small role="status">{notice}</small>}
       {link && (
         <input
-          aria-label="Enlace de invitación"
+          aria-label={t("Enlace de invitación", "Invitation link")}
           readOnly
           value={link}
           onFocus={(event) => event.currentTarget.select()}

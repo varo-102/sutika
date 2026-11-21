@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import PublicRegistration from "@/components/PublicRegistration";
+import { boliviaTime, localized, translate } from "@/lib/locale";
 import {
   ArrowLeft,
   BadgeCheck,
@@ -34,32 +35,31 @@ import {
   WINNER_USDC,
 } from "@/lib/rules";
 export const dynamic = "force-dynamic";
-const labels: Record<string, string> = {
-  anchor: "Registro del torneo",
-  escrow: "Creación del escrow",
-  bind: "Vínculo de la custodia",
-  fund: "Depósito de USDC",
-  freeze: "Plantillas congeladas",
-  declare: "Declaración del ganador",
-  mark: "Resultado en el escrow",
-  approve_tw: "Hito aprobado",
-  approve: "Ganador confirmado",
-  dispute: "Impugnación",
-  resolve: "Resolución",
-  release: "Pago al primer puesto",
-};
+const labelsFor = (t: ReturnType<typeof translate>): Record<string, string> => ({
+  anchor: t("Registro del torneo", "Tournament registration"),
+  escrow: t("Creación del escrow", "Escrow creation"),
+  bind: t("Vínculo de la custodia", "Escrow linked to tournament"),
+  fund: t("Depósito de USDC", "USDC deposit"),
+  freeze: t("Plantillas congeladas", "Rosters locked"),
+  declare: t("Declaración del ganador", "Winner published"),
+  mark: t("Resultado en el escrow", "Result recorded in escrow"),
+  approve_tw: t("Hito aprobado", "Milestone approved"),
+  approve: t("Ganador confirmado", "Winner approved"),
+  dispute: t("Impugnación", "Dispute"),
+  resolve: t("Resolución", "Resolution"),
+  release: t("Pago al primer puesto", "First-place payment"),
+});
 
-export default async function TournamentPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
-  const { slug } = await params;
+export default async function TournamentPage({ params }: PageProps<"/[lang]/tournaments/[slug]">) {
+  const { lang, slug } = await params;
+  const locale = lang === "en" ? "en" : "es";
+  const tr = translate(locale);
+  const labels = labelsFor(tr);
   let t: Awaited<ReturnType<typeof getTournament>>;
   try {
     t = await getTournament(slug);
   } catch {
-    return <PublicRegistration slug={slug} />;
+    return <PublicRegistration slug={slug} locale={locale} />;
   }
   if (!t) {
     if (deployment.registrations.some((r) => r.slug === slug))
@@ -72,16 +72,16 @@ export default async function TournamentPage({
   if (!t.ledgerId || t.sorobanContractId !== deployment.contractId)
     return (
       <section className="narrow">
-        <Link className="inline-link" href="/#torneos">
+        <Link className="inline-link" href={localized(locale, "/#torneos")}>
           <ArrowLeft />
-          Volver a torneos
+          {tr("Volver a torneos", "Back to tournaments")}
         </Link>
-        <p className="eyebrow">Archivo del prototipo</p>
+        <p className="eyebrow">{tr("Archivo del prototipo", "Prototype archive")}</p>
         <h1>{t.name}</h1>
-        <p>Registro histórico de una versión anterior de Sutika.</p>
+        <p>{tr("Registro histórico de una versión anterior de Sutika.", "Historical record from an earlier version of SUTIKA.")}</p>
         {confirmed.length > 0 && (
           <section className="panel">
-            <h2>Comprobantes históricos</h2>
+            <h2>{tr("Comprobantes históricos", "Historical receipts")}</h2>
             <ul>
               {confirmed.map((o) => (
                 <li key={o.id}>
@@ -116,17 +116,17 @@ export default async function TournamentPage({
         : [],
     );
   const milestones = [
-    { kind: "anchor", name: "Registro", icon: Flag },
-    { kind: "fund", name: "Depósito", icon: LockKeyhole },
-    { kind: "approve", name: "Ganador confirmado", icon: BadgeCheck },
-    { kind: "release", name: "Pago", icon: Trophy },
+    { kind: "anchor", name: tr("Registro", "Registration"), icon: Flag },
+    { kind: "fund", name: tr("Depósito", "Deposit"), icon: LockKeyhole },
+    { kind: "approve", name: tr("Ganador confirmado", "Winner approved"), icon: BadgeCheck },
+    { kind: "release", name: tr("Pago", "Payment"), icon: Trophy },
   ];
   return (
     <article className="detail-shell">
       <header className="heading tournament-heading">
         <Link href="/#torneos">
           <ArrowLeft size={16} />
-          Volver a torneos
+          {tr("Volver a torneos", "Back to tournaments")}
         </Link>
         <p className="eyebrow">
           {game.name} · {game.format}
@@ -134,59 +134,59 @@ export default async function TournamentPage({
         <h1>{t.name}</h1>
         <p>
           {t.rosterLocked
-            ? "Inscripciones cerradas"
+            ? tr("Inscripciones cerradas", "Registration closed")
             : registered
-              ? "Inscripción gratuita"
-              : "Registro en Stellar pendiente"}{" "}
-          · Red de prueba
+              ? tr("Inscripción gratuita", "Free entry")
+              : tr("Registro en Stellar pendiente", "Stellar registration pending")}{" "}
+          {tr("· Red de prueba", "· Test network")}
         </p>
         <div className="buttons tournament-choices">
           <a className="btn btn-gold" href="#participar">
             {registered && !t.rosterLocked
-              ? "Inscribirme"
-              : "Ver opciones de mi cuenta"}
+              ? tr("Inscribirme", "Register")
+              : tr("Ver opciones de mi cuenta", "View account options")}
           </a>
           <a className="btn btn-outline" href="#historial">
-            Ver estado del premio
+            {tr("Ver estado del premio", "View prize status")}
           </a>
-          {registered && <ShareTournament />}
+          {registered && <ShareTournament locale={locale} />}
         </div>
       </header>
       <section className="prize-summary" aria-labelledby="premio">
         <div>
           <p className="eyebrow">
             <Crown />
-            Premio al primer puesto
+            {tr("Premio al primer puesto", "First-place prize")}
           </p>
           <h2 id="premio">
-            {WINNER_USDC} USDC <small>de prueba</small>
+            {WINNER_USDC} USDC <small>{tr("de prueba", "test funds")}</small>
           </h2>
           <p>
             {game.size === 5
-              ? "1 USDC por cada uno de los cinco titulares ganadores."
-              : "El jugador ganador recibe los 5 USDC."}
+              ? tr("1 USDC por cada uno de los cinco titulares ganadores.", "1 test USDC for each of the five winning players.")
+              : tr("El jugador ganador recibe los 5 USDC.", "The winner receives 5 test USDC.")}
           </p>
         </div>
         <div>
           <span className={"status-mark " + (funded ? "positive" : "pending")}>
             <i />
             {paid
-              ? "Pago confirmado"
+              ? tr("Pago confirmado", "Payment confirmed")
               : funded
-                ? "En custodia"
-                : "Depósito pendiente"}
+                ? tr("En custodia", "In escrow")
+                : tr("Depósito pendiente", "Deposit pending")}
           </span>
           <details>
-            <summary>Ver aporte del patrocinador</summary>
+            <summary>{tr("Ver aporte del patrocinador", "View sponsor contribution")}</summary>
             <p>
-              Premio neto: {WINNER_USDC} USDC.
+              {tr("Premio neto:", "Net prize")} {WINNER_USDC} USDC.
               <br />
-              Plataforma: {display(WINNER_FUNDING.platform)} USDC.
+              {tr("Plataforma:", "Platform fee")} {display(WINNER_FUNDING.platform)} USDC.
               <br />
-              Protocolo: {display(WINNER_FUNDING.protocol)} USDC.
+              {tr("Protocolo:", "Protocol fee")} {display(WINNER_FUNDING.protocol)} USDC.
               <br />
               <strong>
-                Total a depositar: {display(WINNER_FUNDING.gross)} USDC.
+                {tr("Total a depositar:", "Total deposit")} {display(WINNER_FUNDING.gross)} USDC.
               </strong>
             </p>
           </details>
@@ -198,8 +198,8 @@ export default async function TournamentPage({
             <Layers3 />
           </span>
           <div>
-            <h2>Estado del premio</h2>
-            <p>Abre el comprobante de cada etapa confirmada en Stellar.</p>
+            <h2>{tr("Estado del premio", "Prize status")}</h2>
+            <p>{tr("Abre el comprobante de cada etapa confirmada en Stellar.", "Open the receipt for each confirmed step on Stellar.")}</p>
           </div>
         </div>
         <ol className="payout-progress">
@@ -219,11 +219,11 @@ export default async function TournamentPage({
                     rel="noreferrer"
                   >
                     <Check size={13} />
-                    Ver comprobante <ExternalLink size={12} />
+                    {tr("Ver comprobante", "View receipt")} <ExternalLink size={12} />
                   </a>
                 ) : (
                   <small>
-                    <Circle size={8} /> Pendiente
+                    <Circle size={8} /> {tr("Pendiente", "Pending")}
                   </small>
                 )}
               </li>
@@ -231,7 +231,7 @@ export default async function TournamentPage({
           })}
         </ol>
         <details className="full-history">
-          <summary>Historial completo de transacciones</summary>
+          <summary>{tr("Historial completo de transacciones", "Full transaction history")}</summary>
           {confirmed.length ? (
             <ol>
               {confirmed.map((o) => (
@@ -244,23 +244,23 @@ export default async function TournamentPage({
                   >
                     {labels[o.kind] ?? o.kind} <ExternalLink />
                   </a>
-                  {o.status === "SUPERSEDED" ? " · ronda anterior" : ""}
+                  {o.status === "SUPERSEDED" ? tr(" · ronda anterior", " · previous round") : ""}
                 </li>
               ))}
             </ol>
           ) : (
-            <p>Aún no hay movimientos confirmados.</p>
+            <p>{tr("Aún no hay movimientos confirmados.", "There are no confirmed transactions yet.")}</p>
           )}
           <div className="document-links">
             <a className="inline-link" href={getExplorerContractUrl()}>
-              Contrato de Sutika <ExternalLink />
+              {tr("Contrato de Sutika", "SUTIKA contract")} <ExternalLink />
             </a>
             {t.sorobanEscrowId && (
               <a
                 className="inline-link"
                 href={getExplorerContractUrl(t.sorobanEscrowId)}
               >
-                Contrato de custodia <ExternalLink />
+                {tr("Contrato de custodia", "Escrow contract")} <ExternalLink />
               </a>
             )}
           </div>
@@ -269,8 +269,8 @@ export default async function TournamentPage({
           .filter((o) => ["PREPARED", "PENDING"].includes(o.status))
           .map((o) => (
             <div className="pending-receipt" key={o.id}>
-              <p>{labels[o.kind]} · Pendiente</p>
-              <ReceiptStatus id={o.id} />
+              <p>{labels[o.kind]} · {tr("Pendiente", "Pending")}</p>
+              <ReceiptStatus id={o.id} locale={locale} />
             </div>
           ))}
       </section>
@@ -280,7 +280,7 @@ export default async function TournamentPage({
             <span className="accent-icon violet">
               <Users />
             </span>
-            <h2>Plantillas y ganador</h2>
+            <h2>{tr("Plantillas y ganador", "Rosters and winner")}</h2>
           </div>
           {t.teams.length ? (
             <ul>
@@ -288,20 +288,18 @@ export default async function TournamentPage({
                 <li key={tm.id}>
                   <strong>{tm.name}</strong> · {tm.participants.length}/
                   {t.teamMaxSize}
-                  {winningTeam?.id === tm.id ? " · Primer puesto" : ""}
+                  {winningTeam?.id === tm.id ? tr(" · Primer puesto", " · First place") : ""}
                 </li>
               ))}
             </ul>
           ) : (
-            <p>Aún no hay participantes inscritos.</p>
+            <p>{tr("Aún no hay participantes inscritos.", "No players have registered yet.")}</p>
           )}
           {claimAt !== null && !paid && (
             <p>
-              <Clock3 size={15} /> Puedes pedir una revisión hasta el{" "}
-              {new Date(claimAt).toLocaleString("es-BO", {
-                timeZone: "America/La_Paz",
-              })}
-              , hora de Bolivia.
+              <Clock3 size={15} /> {tr("Puedes pedir una revisión hasta el", "You can request a review until")}{" "}
+              {boliviaTime(locale).format(claimAt)}
+              {tr(", hora de Bolivia.", " · Bolivia time.")}
             </p>
           )}
         </section>
@@ -311,14 +309,14 @@ export default async function TournamentPage({
               <Coins />
             </span>
             <div>
-              <h2>Tu cuenta en este torneo</h2>
+              <h2>{tr("Tu cuenta en este torneo", "Your account in this tournament")}</h2>
               <p>
-                Conéctala para inscribirte, gestionar el torneo o cobrar si
-                ganas.
+                {tr("Conéctala para inscribirte, gestionar el torneo o cobrar si ganas.", "Connect to register, manage the tournament, or claim a prize.")}
               </p>
             </div>
           </div>
           <WalletActions
+            locale={locale}
             slug={slug}
             teams={t.teams.map((tm) => ({
               id: tm.id,

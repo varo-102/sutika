@@ -1,3 +1,4 @@
+import { PublicError } from "./errors.ts";
 export const games = {
   CLASH_ROYALE: { name: "Clash Royale", format: "1v1", size: 1 },
   MOBILE_LEGENDS: { name: "Mobile Legends: Bang Bang", format: "5v5", size: 5 },
@@ -5,7 +6,7 @@ export const games = {
 export type Game = keyof typeof games;
 export function gameOf(value: string): Game {
   if (value !== "CLASH_ROYALE" && value !== "MOBILE_LEGENDS")
-    throw new Error("Juego inválido.");
+    throw new PublicError("Juego inválido.", "Choose a supported game.");
   return value;
 }
 export const UNIT = 10_000_000n;
@@ -13,10 +14,10 @@ export const PLATFORM_BPS = 200n;
 export const PROTOCOL_BPS = 30n;
 export function units(value: string) {
   if (!/^\d{1,7}(\.\d{1,2})?$/.test(value))
-    throw new Error("Usa un monto positivo con hasta dos decimales.");
+    throw new PublicError("Usa un monto positivo con hasta dos decimales.", "Use a positive amount with up to two decimal places.");
   const [whole, fraction = ""] = value.split(".");
   const amount = BigInt(whole) * UNIT + BigInt(fraction.padEnd(7, "0"));
-  if (amount <= 0n) throw new Error("El importe debe ser mayor que cero.");
+  if (amount <= 0n) throw new PublicError("El importe debe ser mayor que cero.", "The amount must be greater than zero.");
   return amount;
 }
 export function display(amount: bigint) {
