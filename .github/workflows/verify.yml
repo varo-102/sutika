@@ -1,0 +1,36 @@
+name: Verify Sutika
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm install --global npm@12.2.3
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm audit --audit-level=high
+      - run: npm run build
+  contract:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: contracts/sutika-core
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: rustup toolchain install 1.100.0 --profile minimal --target wasm32v1-none
+      - run: cargo test --locked
+      - name: Install verified Stellar CLI
+        run: |
+          curl -fsSL --retry 3 https://github.com/stellar/stellar-cli/releases/download/v30.0.1/stellar-cli-30.0.1-x86_64-unknown-linux-gnu.tar.gz -o "$RUNNER_TEMP/stellar.tgz"
+          echo "48c70074020e09af0a3ebbd2bf62d53c9aec47935e49a112d3cd90fb4e37658f  $RUNNER_TEMP/stellar.tgz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/stellar.tgz" -C "$RUNNER_TEMP" stellar
+          "$RUNNER_TEMP/stellar" contract build
+          expected=$(node -p "require('../../src/lib/deployment.json').wasmHash")
+          echo "$expected  target/wasm32v1-none/release/sutika_core.wasm" | sha256sum -c -

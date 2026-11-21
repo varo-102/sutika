@@ -1,23 +1,12 @@
-# Soroban Project
+# Sutika Core
 
-## Project Structure
+Registro de torneos y reparto de premios en Stellar Testnet. El constructor fija el contrato del token. Cada torneo vincula el escrow a su identificador y a sus roles, congela las plantillas, registra el podio e impone una ventana de impugnación de 24 horas. El proceso de liberación y el reparto se ejecutan en una sola transacción.
 
-This repository uses the recommended structure for a Soroban project:
+Desde este directorio:
 
-```text
-.
-├── contracts
-│   └── hello_world
-│       ├── src
-│       │   ├── lib.rs
-│       │   └── test.rs
-│       └── Cargo.toml
-├── Cargo.toml
-├── AGENTS.md
-└── README.md
+```sh
+cargo test --locked
+stellar contract build
 ```
 
-- New Soroban contracts can be put in `contracts`, each in their own directory. There is already a `hello_world` contract in there to get you started.
-- If you initialized this project with any other example contracts via `--with-example`, those contracts will be in the `contracts` directory as well.
-- Contracts should have their own `Cargo.toml` files that rely on the top-level `Cargo.toml` workspace for their dependencies.
-- Frontend libraries can be added to the top-level directory as well. If you initialized this project with a frontend template via `--frontend-template` you will have those files already included.
+El toolchain de Rust está fijado en `rust-toolchain.toml`. Usa Stellar CLI 30.0.1. Consulta el [README del proyecto](../../README.md) para la arquitectura, la instancia desplegada y los comprobantes públicos.
