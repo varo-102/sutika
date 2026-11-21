@@ -1,4 +1,5 @@
 import "server-only";
+import { PublicError } from "../errors.ts";
 import { rpc, scValToNative, StrKey, Transaction, TransactionBuilder, type xdr } from "@stellar/stellar-sdk";
 import type { CompetitionOperationV3 } from "@prisma/client";
 import type { ActionInput } from "../auth";
@@ -73,12 +74,12 @@ export async function prepare(actor: string, action: ActionInput, kind: V3Kind) 
 }
 
 export async function settle(id: string, signedXdr?: string) {
-  if (!/^[a-f0-9-]{36}$/.test(id)) throw new Error("No se encontró esta solicitud de Stellar.");
+  if (!/^[a-f0-9-]{36}$/.test(id)) throw new PublicError("No se encontró esta solicitud de Stellar.", "This Stellar request could not be found.");
   const db = database();
   const op = await db.competitionOperationV3.findUnique({
     where: { id }, include: { competition: { select: { slug: true, contractId: true } } },
   });
-  if (!op) throw new Error("No se encontró esta solicitud de Stellar.");
+  if (!op) throw new PublicError("No se encontró esta solicitud de Stellar.", "This Stellar request could not be found.");
   const { hash } = op;
   const reply = { id, hash, slug: op.competition.slug };
   if (lasting.includes(op.status)) return { ...reply, status: op.status };
@@ -89,14 +90,14 @@ export async function settle(id: string, signedXdr?: string) {
     const signed = TransactionBuilder.fromXDR(signedXdr, testnet);
     if (!(signed instanceof Transaction) || signed.source !== op.actor ||
       hex(signed.hash()) !== hash || signed.signatures.length < 1) {
-      throw new Error("La firma no corresponde a la transacción de la ficha.");
+      throw new PublicError("La firma no corresponde a la transacción de la ficha.", "The signature does not match this tournament transaction.");
     }
     const sent = await server.sendTransaction(signed);
     if (!["PENDING", "DUPLICATE", "TRY_AGAIN_LATER"].includes(sent.status)) {
       // A parallel submission can win the race. Consult Testnet before reporting failure.
       status = await server.getTransaction(hash);
       if (status.status === rpc.Api.GetTransactionStatus.NOT_FOUND) {
-        throw new Error("Stellar rechazó la transacción. Comprueba tu saldo Testnet o vuelve a intentarlo.");
+        throw new PublicError("Stellar rechazó la transacción. Comprueba tu saldo Testnet o vuelve a intentarlo.", "Stellar rejected the transaction. Check your test balance and try again.");
       }
     }
   }
@@ -116,7 +117,7 @@ export async function settle(id: string, signedXdr?: string) {
   if (!eventMatches(events, op, op.competition.contractId, ctx)
     || (ctx.from && !verifiedTransfers(op.kind, ctx, ctx.place ?? 0, usdc, events))
     || (op.kind === "escrow" && (!status.returnValue || scValToNative(status.returnValue)?.[0] !== ctx.escrow))) {
-    throw new Error("La transacción requiere revisión. Su comprobante todavía no coincide con la operación.");
+    throw new PublicError("La transacción requiere revisión. Su comprobante todavía no coincide con la operación.", "The transaction needs review. Its receipt does not yet match the operation.");
   }
   const confirmedAt = new Date(status.createdAt * 1000);
   await db.$transaction(async (projection) => {

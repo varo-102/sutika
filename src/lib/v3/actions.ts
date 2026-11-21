@@ -1,4 +1,5 @@
 import "server-only";
+import { PublicError } from "../errors.ts";
 import { createHash } from "node:crypto";
 import { Contract } from "@stellar/stellar-sdk";
 import { Prisma } from "@prisma/client";
@@ -14,19 +15,19 @@ import { addr, bool, bytes, u32, u64, vec } from "./xdr";
 
 export const actionHash = (value: string) => createHash("sha256").update(value).digest("hex");
 export const hexId = (value: unknown) => {
-  if (typeof value !== "string" || !/^[a-f0-9]{64}$/.test(value)) throw new Error("Falta un identificador de Stellar.");
+  if (typeof value !== "string" || !/^[a-f0-9]{64}$/.test(value)) throw new PublicError("Falta un identificador de Stellar.", "A Stellar identifier is missing.");
   return value;
 };
 const wholeNumber = (value: unknown, min: number, max: number) => {
   if (typeof value !== "number" || !Number.isInteger(value) || value < min || value > max) {
-    throw new Error("Revisa el cupo, el puesto o el turno asignado.");
+    throw new PublicError("Revisa el cupo, el puesto o el turno asignado.", "Check the entry limit, place, or assigned slot.");
   }
   return value;
 };
 export const setup = (row: CompetitionV3) => row.rules as unknown as Setup;
 const sum = (list: string[]) => list.reduce((a, b) => a + BigInt(b), 0n);
 const requireRole = (actor: string, expected: string) => {
-  if (actor !== expected) throw new Error("Esta acción requiere la billetera del rol indicado.");
+  if (actor !== expected) throw new PublicError("Esta acción requiere la billetera del rol indicado.", "Connect the account assigned to this role.");
 };
 const ledgerNow = () => Math.floor(Date.now() / 1000);
 
@@ -53,14 +54,14 @@ type Operation = ReturnType<Contract["call"]>;
 export async function locate(actor: string, action: ActionInput) {
   if (action.kind !== "create") {
     const row = await database().competitionV3.findUnique({ where: { slug: shortText(action.slug, 96) } });
-    if (!row?.anchoredAt) throw new Error("El torneo todavía no está publicado.");
+    if (!row?.anchoredAt) throw new PublicError("El torneo todavía no está publicado.", "This tournament has not been published yet.");
     return row;
   }
 
   const core = activeCore();
-  if (!core) throw new Error("La V3 aún no está habilitada en este entorno.");
+  if (!core) throw new PublicError("La V3 aún no está habilitada en este entorno.", "SUTIKA V3 is unavailable in this environment.");
   const nonce = shortText(action.nonce, 36);
-  if (!/^[0-9a-f-]{36}$/.test(nonce)) throw new Error("Vuelve a abrir el formulario para crear el torneo.");
+  if (!/^[0-9a-f-]{36}$/.test(nonce)) throw new PublicError("Vuelve a abrir el formulario para crear el torneo.", "Open the creation form again.");
   const id = actionHash("sutika:v3:" + actor + ":" + nonce);
   const name = shortText(action.name, 60);
   const game = gameOf(shortText(action.game, 24));
@@ -72,7 +73,7 @@ export async function locate(actor: string, action: ActionInput) {
   const sponsor = mode === "entry" ? actor : wallet(action.sponsor || actor);
   const referee = wallet(action.referee);
   if (referee === actor || referee === sponsor) {
-    throw new Error("El árbitro debe usar una billetera distinta del organizador y del patrocinador.");
+    throw new PublicError("El árbitro debe usar una billetera distinta del organizador y del patrocinador.", "The referee must use an account different from the organizer and sponsor.");
   }
   const entry = mode === "sponsored" ? 0n : decimalAmount(shortText(action.entry, 32), MIN_ENTRY);
   const sponsorParts = mode === "entry" ? [] :
@@ -89,7 +90,7 @@ export async function locate(actor: string, action: ActionInput) {
     return current;
   }
   if (deadline < now + 60 || deadline > now + 30 * 86_400 - 300) {
-    throw new Error("El cierre debe quedar entre un minuto y 30 días a partir de ahora.");
+    throw new PublicError("El cierre debe quedar entre un minuto y 30 días a partir de ahora.", "The deadline must be between one minute and 30 days from now.");
   }
   const slug = (name.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
     .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "copa") + "-" + id.slice(0, 12);
@@ -104,39 +105,39 @@ function verifyCreate(row: CompetitionV3, name: string, game: string, rules: Set
   // Compare canonical XDR. PostgreSQL JSONB can reorder the original object.
   if (row.name !== name || row.game !== game ||
     tournamentRules(setup(row)).toXDR("base64") !== tournamentRules(rules).toXDR("base64")) {
-    throw new Error("La solicitud de creación cambió. Vuelve a revisar la ficha.");
+    throw new PublicError("La solicitud de creación cambió. Vuelve a revisar la ficha.", "The creation request changed. Review the tournament details again.");
   }
 }
 
 export async function state(row: CompetitionV3) {
   const value = await onChain(row.contractId, row.id);
-  if (!value) throw new Error("Stellar todavía no devuelve el estado del torneo.");
+  if (!value) throw new PublicError("Stellar todavía no devuelve el estado del torneo.", "Stellar has not returned the tournament status yet.");
   return value;
 }
 
 export async function winner(row: CompetitionV3, t: ChainCompetition, member: string) {
   const outcome = t.outcome[0];
-  if (t.cancelled || !outcome || outcome.disputed) throw new Error("Todavía no hay un resultado válido.");
+  if (t.cancelled || !outcome || outcome.disputed) throw new PublicError("Todavía no hay un resultado válido.", "There is no valid result yet.");
   const teams = await Promise.all(outcome.places.map((id) => rosterOnChain(row.contractId, row.id, hex(id))));
-  if (!teams.some((r) => r?.members.includes(member))) throw new Error("Esta acción solo está disponible para ganadores.");
+  if (!teams.some((r) => r?.members.includes(member))) throw new PublicError("Esta acción solo está disponible para ganadores.", "This action is available to winners only.");
   return outcome;
 }
 
 function evidence(value: unknown) {
   const link = new URL(shortText(value, 500));
   if (link.protocol !== "https:" || link.username || link.password) {
-    throw new Error("Usa un enlace HTTPS público a la evidencia de la partida.");
+    throw new PublicError("Usa un enlace HTTPS público a la evidencia de la partida.", "Use a public HTTPS link to the match evidence.");
   }
   const url = link.toString();
   return { url, digest: bytes(actionHash(url)) };
 }
 
 function podium(value: unknown, current: ChainCompetition, count: number) {
-  if (!Array.isArray(value) || value.length !== count) throw new Error("Selecciona un equipo para cada puesto.");
+  if (!Array.isArray(value) || value.length !== count) throw new PublicError("Selecciona un equipo para cada puesto.", "Select an entrant for every prize place.");
   const places = value.map(hexId);
   const choices = current.locked_teams.map(hex);
   if (new Set(places).size !== places.length || places.some((place) => !choices.includes(place))) {
-    throw new Error("Elige plantillas distintas y confirmadas.");
+    throw new PublicError("Elige plantillas distintas y confirmadas.", "Choose different confirmed entrants.");
   }
   return vec(places.map(bytes));
 }
@@ -162,7 +163,7 @@ export async function build(
   if (kind === "escrow") {
     requireRole(actor, r.sponsor);
     if (r.mode === "entry" || t.escrow || t.cancelled || ledgerNow() >= r.deadline) {
-      throw new Error("El torneo no necesita otra custodia.");
+      throw new PublicError("El torneo no necesita otra custodia.", "The tournament does not need another escrow.");
     }
     const config = await settingsOnChain(row.contractId);
     const created = buildEscrow({
@@ -174,13 +175,13 @@ export async function build(
   }
   if (kind === "fund") {
     requireRole(actor, r.sponsor);
-    if (t.escrow) throw new Error("El depósito ya está confirmado.");
+    if (t.escrow) throw new PublicError("El depósito ya está confirmado.", "The deposit is already confirmed.");
     const deployment = await database().competitionOperationV3.findFirst({
       where: { competitionId: row.id, kind: "escrow", status: "CONFIRMED" },
       orderBy: { confirmedAt: "desc" },
     });
     const ctx = deployment?.context as Context | undefined;
-    if (!ctx?.escrow || !ctx.salt) throw new Error("Primero confirma la apertura de la custodia.");
+    if (!ctx?.escrow || !ctx.salt) throw new PublicError("Primero confirma la apertura de la custodia.", "Confirm that the escrow is open first.");
     const total = sum(r.sponsorParts);
     await confirmVendorFunding(ctx.escrow, actor, total);
     return {
@@ -192,10 +193,10 @@ export async function build(
     const captain = action.team === undefined || action.team === "";
     const team = captain ? actionHash(row.id + ":" + actor) : hexId(action.team);
     const current = captain ? null : await rosterOnChain(row.contractId, row.id, team);
-    if (!captain && !current) throw new Error("Este equipo todavía no está inscrito.");
+    if (!captain && !current) throw new PublicError("Este equipo todavía no está inscrito.", "This team has not signed up yet.");
     const shares = weights(action.shares, [r.size]);
     const slot = wholeNumber(action.slot, 0, r.size - 1);
-    if (slot !== (current?.members.length ?? 0)) throw new Error("Cambió el turno de inscripción. Actualiza la página.");
+    if (slot !== (current?.members.length ?? 0)) throw new PublicError("Cambió el turno de inscripción. Actualiza la página.", "The available team slot changed. Refresh the page.");
     const name = captain ? shortText(action.teamName, 48) : undefined;
     const amount = captain ? BigInt(r.entry) : 0n;
     return {
@@ -217,7 +218,7 @@ export async function build(
   if (kind === "approve") {
     requireRole(actor, r.mode === "entry" ? r.referee : r.sponsor);
     if (!outcome || wholeNumber(action.revision, 1, 100) !== outcome.revision) {
-      throw new Error("El resultado cambió. Vuelve a revisar el podio.");
+      throw new PublicError("El resultado cambió. Vuelve a revisar el podio.", "The result changed. Review the standings again.");
     }
     return { operation: core.call("approve", id, u32(outcome.revision)), context: {} };
   }
@@ -239,15 +240,15 @@ export async function build(
   }
   if (kind === "ready") {
     const current = await winner(row, t, actor);
-    if (wholeNumber(action.revision, 1, 100) !== current.revision) throw new Error("El resultado cambió. Vuelve a revisar el podio.");
+    if (wholeNumber(action.revision, 1, 100) !== current.revision) throw new PublicError("El resultado cambió. Vuelve a revisar el podio.", "The result changed. Review the standings again.");
     await verifiedWallet(actor);
     return { operation: core.call("ready", id, addr(actor), u32(current.revision)), context: { member: actor } };
   }
   if (kind === "pay") {
-    if (!outcome) throw new Error("El torneo todavía no tiene podio.");
+    if (!outcome) throw new PublicError("El torneo todavía no tiene podio.", "The tournament does not have a result yet.");
     const place = wholeNumber(action.place, 0, r.places.length - 1);
     const target = await rosterOnChain(row.contractId, row.id, hex(outcome.places[place]));
-    if (!target) throw new Error("No se encontró la plantilla ganadora.");
+    if (!target) throw new PublicError("No se encontró la plantilla ganadora.", "The winning roster could not be found.");
     await Promise.all(target.members.map(verifiedWallet));
     const config = await settingsOnChain(row.contractId);
     const entry = quote(distribute(t.entry_locked, r.places)[place], r.mode);
@@ -268,14 +269,14 @@ export async function build(
   if (kind === "refund") {
     const team = hexId(action.team);
     const rowTeam = await rosterOnChain(row.contractId, row.id, team);
-    if (!rowTeam) throw new Error("No se encontró el aporte original.");
+    if (!rowTeam) throw new PublicError("No se encontró el aporte original.", "The original contribution could not be found.");
     return {
       operation: core.call("refund", id, bytes(team)),
       context: { team, ...transfer(row.contractId, [[rowTeam.payer, rowTeam.contribution]]) },
     };
   }
   requireRole(actor, r.referee);
-  if (!t.escrow) throw new Error("No hay un aporte patrocinado para devolver.");
+  if (!t.escrow) throw new PublicError("No hay un aporte patrocinado para devolver.", "There is no sponsored contribution to refund.");
   const config = await settingsOnChain(row.contractId);
   const q = quote(sum(r.sponsorParts), r.mode);
   return {

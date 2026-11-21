@@ -1,7 +1,17 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-export default function ReceiptStatus({ id }: { id: string }) {
+import { translate, type Locale } from "@/lib/locale";
+
+export default function ReceiptStatus({ id, locale = "es" }: { id: string; locale?: Locale }) {
+  const t = translate(locale);
+  const labels: Record<string, string> = {
+    CONFIRMED: t("Confirmada", "Confirmed"),
+    EXPIRED: t("Vencida", "Expired"),
+    FAILED: t("Fallida", "Failed"),
+    PREPARED: t("Esperando firma", "Awaiting signature"),
+    PENDING: t("Pendiente de confirmación", "Awaiting confirmation"),
+  };
   const [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false);
   const router = useRouter();
@@ -15,21 +25,13 @@ export default function ReceiptStatus({ id }: { id: string }) {
       });
       const data = await r.json();
       setMessage(
-        !r.ok
-          ? data.error
-          : ((
-              {
-                CONFIRMED: "Confirmada",
-                EXPIRED: "Vencida",
-                FAILED: "Fallida",
-                PREPARED: "Esperando firma",
-                PENDING: "Pendiente de confirmación",
-              } as Record<string, string>
-            )[data.status] ?? "Pendiente"),
+        r.ok
+          ? labels[data.status] ?? t("Pendiente", "Pending")
+          : t("No se pudo consultar Stellar.", "Stellar could not be reached."),
       );
       router.refresh();
     } catch {
-      setMessage("No se pudo consultar Stellar.");
+      setMessage(t("No se pudo consultar Stellar.", "Stellar could not be reached."));
     } finally {
       setBusy(false);
     }
@@ -42,7 +44,7 @@ export default function ReceiptStatus({ id }: { id: string }) {
         disabled={busy}
         onClick={check}
       >
-        Consultar en Stellar
+        {t("Consultar en Stellar", "Check on Stellar")}
       </button>{" "}
       <span role="status">{message}</span>
     </>

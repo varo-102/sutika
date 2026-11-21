@@ -124,7 +124,6 @@ small {
 .mono,
 code,
 .technical-value,
-.brand-network,
 .foot-network {
   font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
 }
@@ -163,10 +162,6 @@ code,
 .text-action,
 .inline-link,
 .hero-kicker,
-.game-choices,
-.slide-arrows,
-.competition-bottom,
-.reward,
 .card-cta,
 .eval-game,
 .status-mark {
@@ -220,14 +215,6 @@ code,
   border-color: #9c832e;
   transform: translateY(-1px);
 }
-.brand-network {
-  color: var(--violet);
-  background: #242039;
-  border: 1px solid #444064;
-  font-size: 0.65rem;
-  border-radius: 99px;
-  padding: 0.16rem 0.52rem;
-}
 .main-nav {
   gap: 1.6rem;
 }
@@ -243,15 +230,6 @@ code,
 .main-nav a:hover,
 .main-nav a:focus-visible {
   color: white;
-}
-.main-nav .evaluator-link {
-  color: #f7f6fa;
-  font-weight: 680;
-}
-.main-nav .evaluator-link svg,
-.main-nav .evaluator-link:hover,
-.main-nav .evaluator-link[aria-current="page"] {
-  color: var(--gold);
 }
 .nav-actions {
   gap: 0.5rem;
@@ -340,14 +318,11 @@ code,
 .secondary:active {
   transform: translateY(1px) scale(0.98);
 }
-.motion-arrow,
-.card-cta svg,
-.caption-link svg {
+.motion-arrow {
   transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .btn:hover .motion-arrow,
-.btn:focus-visible .motion-arrow,
-.competition-card:hover .card-cta svg {
+.btn:focus-visible .motion-arrow {
   transform: translateX(4px);
 }
 .btn svg.lucide-arrow-down.motion-arrow {
@@ -366,8 +341,7 @@ code,
   border-radius: 9px;
   font-size: 0.84rem;
 }
-.eyebrow,
-.game-label {
+.eyebrow {
   display: flex;
   align-items: center;
   gap: 0.46rem;
@@ -434,78 +408,6 @@ code,
 .hero-story .buttons {
   margin-top: 1.7rem;
 }
-.showcase {
-  min-width: 0;
-  overflow: hidden;
-  margin: 0;
-  background: #11151c;
-  border: 1px solid #514b5a;
-  border-radius: 16px;
-  box-shadow: 0 12px 32px #04070d4d;
-}
-.showcase-frame {
-  position: relative;
-  aspect-ratio: 1.54;
-  isolation: isolate;
-  overflow: hidden;
-  background: #202a42;
-}
-.showcase-slide {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  transition: opacity 0.55s ease;
-  pointer-events: none;
-}
-.showcase-slide.selected {
-  opacity: 1;
-}
-.showcase-slide img {
-  object-fit: cover;
-}
-.showcase-frame:after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(
-    180deg,
-    #070b123d,
-    transparent 23%,
-    transparent 49%,
-    #080c10cc 96%
-  );
-}
-.slide-top,
-.slide-caption {
-  position: absolute;
-  left: 1rem;
-  right: 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.7rem;
-  z-index: 1;
-}
-.slide-top {
-  top: 1rem;
-}
-.image-format,
-.format-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  color: #fff;
-  font-size: 0.73rem;
-  font-weight: 650;
-  border-radius: 7px;
-  padding: 0.3rem 0.56rem;
-  background: #0c111be6;
-  border: 1px solid #ffffff40;
-}
-.playback,
-.caption-link,
-.slide-arrows button,
 .copy-btn,
 .menu-toggle {
   display: inline-grid;
@@ -516,133 +418,12 @@ code,
   border-radius: 8px;
   color: white;
   background: #0d1119df;
-  transition:
-    background 0.2s,
-    border-color 0.2s,
-    transform 0.2s;
+  transition: background .2s, border-color .2s, transform .2s;
 }
-.playback:hover,
-.caption-link:hover,
-.slide-arrows button:hover,
 .copy-btn:hover,
 .menu-toggle:hover {
   color: var(--gold);
   border-color: var(--gold);
-}
-.slide-caption {
-  bottom: 1rem;
-  align-items: end;
-}
-.slide-caption h2 {
-  font-size: clamp(1.35rem, 2.3vw, 2rem);
-  font-weight: 790;
-  letter-spacing: -0.045em;
-  text-shadow: 0 2px 12px #0006;
-}
-.slide-caption div > span {
-  font-size: 0.74rem;
-  color: #f4ede2;
-  font-weight: 600;
-}
-.caption-link {
-  width: 39px;
-  height: 39px;
-  color: var(--gold);
-}
-.caption-link:hover svg {
-  transform: translate(2px, -2px);
-}
-.showcase-controls {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.35rem;
-  padding: 0.52rem 0.66rem;
-  background: #12161d;
-}
-.game-choices {
-  gap: 0.2rem;
-}
-.game-choices button {
-  background: transparent;
-  color: #bec4cf;
-  border: 1px solid transparent;
-  border-radius: 7px;
-  font-size: 0.72rem;
-  font-weight: 670;
-  padding: 0.42rem 0.52rem;
-  transition:
-    background 0.2s,
-    color 0.2s,
-    border-color 0.2s;
-}
-.game-choices button[aria-pressed="true"] {
-  background: #322d22;
-  color: #ffe27b;
-  border-color: #655523;
-}
-.game-choices button:hover {
-  color: white;
-  border-color: #3c414b;
-}
-.slide-arrows {
-  gap: 0.25rem;
-}
-.slide-arrows button {
-  width: 29px;
-  height: 29px;
-  background: transparent;
-  border-color: transparent;
-  color: #ccd1dc;
-}
-.hero-stats {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 1rem;
-  padding: 1.25rem clamp(1.7rem, 3.6vw, 3.2rem);
-  border-top: 1px solid var(--border);
-  background: #0d1117bb;
-}
-.hero-stats > div {
-  display: flex;
-  flex-direction: column-reverse;
-  align-items: start;
-  gap: 0.14rem;
-}
-.hero-stats dt {
-  display: flex;
-  align-items: center;
-  gap: 0.32rem;
-  color: var(--muted);
-  font-size: 0.75rem;
-}
-.hero-stats dt svg {
-  width: 13px;
-  height: 13px;
-}
-.hero-stats dd {
-  display: flex;
-  align-items: center;
-  font-size: clamp(1.12rem, 1.75vw, 1.6rem);
-  font-weight: 790;
-  line-height: 1.18;
-  letter-spacing: -0.045em;
-}
-.hero-stats > div:first-child dd {
-  color: var(--gold);
-}
-.hero-stats dd > span {
-  margin-inline: 0.3rem;
-  color: #9298aa;
-  font-weight: 470;
-}
-.hero-stats dd a {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-.hero-stats dd a svg {
-  color: var(--mint);
 }
 .directory {
   margin-block: 3.5rem;
@@ -673,7 +454,6 @@ code,
   text-decoration: underline;
   text-underline-offset: 4px;
 }
-.tournament-list,
 .columns,
 .eval-tournaments,
 .spec-grid,
@@ -681,108 +461,6 @@ code,
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.25rem;
-}
-.competition-card {
-  display: block;
-  overflow: hidden;
-  border-radius: 15px;
-  border: 1px solid var(--border);
-  background: var(--card);
-  transition:
-    transform 0.25s,
-    border-color 0.25s,
-    box-shadow 0.25s;
-}
-.competition-card:hover,
-.competition-card:focus-visible {
-  border-color: #aa8d3a;
-  box-shadow: 0 8px 28px #02040955;
-}
-.competition-art {
-  position: relative;
-  aspect-ratio: 2.65;
-  background: #202739;
-  overflow: hidden;
-}
-.competition-art img {
-  object-fit: cover;
-  object-position: 50% 48%;
-  transition: transform 0.6s cubic-bezier(0.2, 0.75, 0.25, 1);
-}
-.format-tag {
-  position: absolute;
-  left: 1.05rem;
-  bottom: 0.8rem;
-}
-.competition-info {
-  padding: 1.2rem 1.35rem 1.25rem;
-}
-.competition-info h3 {
-  font-size: 1.4rem;
-  margin: 0.32rem 0;
-  transition: color 0.2s;
-}
-.competition-card:hover h3,
-.competition-card:focus-visible h3 {
-  color: #ffdd63;
-}
-.entry-count {
-  font-size: 0.82rem;
-}
-.entry-count span {
-  padding: 0 0.35rem;
-}
-.competition-bottom {
-  justify-content: space-between;
-  gap: 0.8rem;
-  padding-top: 0.9rem;
-  margin-top: 0.95rem;
-  border-top: 1px solid var(--border);
-}
-.reward {
-  gap: 0.45rem;
-  color: var(--gold);
-  font-size: 1.18rem;
-  font-weight: 770;
-  letter-spacing: -0.025em;
-}
-.card-cta {
-  gap: 0.42rem;
-  font-size: 0.8rem;
-  font-weight: 650;
-  white-space: nowrap;
-}
-.sponsor-band {
-  display: flex;
-  gap: 1.2rem;
-  align-items: center;
-  flex-wrap: wrap;
-  padding: clamp(1.3rem, 3.2vw, 2.25rem);
-  border-radius: 16px;
-  border: 1px solid #393549;
-  background: linear-gradient(110deg, #1c1e2b, #181b25);
-}
-.sponsor-band h2 {
-  font-size: 1.58rem;
-  margin: 0.24rem 0;
-}
-.sponsor-band > div:nth-child(2) {
-  flex: 1;
-  min-width: min(18rem, 100%);
-}
-.sponsor-band > div > p:last-child {
-  max-width: 42rem;
-  font-size: 0.9rem;
-}
-.sponsor-symbol {
-  display: grid;
-  place-items: center;
-  width: 55px;
-  height: 55px;
-  background: #2e274d;
-  color: var(--violet);
-  border: 1px solid #51476c;
-  border-radius: 14px;
 }
 footer {
   border-top: 1px solid var(--border);
@@ -1342,14 +1020,6 @@ form button {
     opacity: 1;
   }
 }
-@keyframes camera-drift {
-  from {
-    transform: scale(1);
-  }
-  to {
-    transform: scale(1.045);
-  }
-}
 @media (hover: hover) {
   .btn:hover,
   .primary:hover,
@@ -1361,14 +1031,6 @@ form button {
   .secondary:active {
     transform: translateY(1px) scale(0.98);
   }
-  .competition-card:hover,
-  .competition-card:focus-visible {
-    transform: translateY(-4px);
-  }
-  .competition-card:hover .competition-art img,
-  .competition-card:focus-visible .competition-art img {
-    transform: scale(1.045);
-  }
 }
 @media (prefers-reduced-motion: no-preference) {
   html {
@@ -1378,25 +1040,13 @@ form button {
   .eval-banner {
     animation: sutika-rise 0.38s both;
   }
-  .showcase {
-    animation: sutika-rise 0.45s 0.07s both;
-  }
-  .showcase-slide.selected img {
-    animation: camera-drift 8s ease-out both;
-  }
 }
 @media (max-width: 960px) {
-  .brand-network {
-    display: none;
-  }
   .main-nav {
     gap: 1rem;
   }
   .arena-hero-main {
     gap: 1.25rem;
-  }
-  .showcase-frame {
-    aspect-ratio: 1.32;
   }
   .hero-story h1 {
     font-size: clamp(2.55rem, 5.25vw, 3.4rem);
@@ -1477,32 +1127,31 @@ form button {
   .hero-intro {
     font-size: 0.96rem;
   }
-  .showcase-frame {
-    aspect-ratio: 1.78;
-  }
-  .hero-stats {
-    grid-template-columns: 1fr 1fr;
-    padding: 1rem 1.25rem;
-    gap: 0.9rem;
-  }
-  .hero-stats dt {
-    font-size: 0.7rem;
-  }
-  .hero-stats dd {
-    font-size: 1.26rem;
-  }
-  .tournament-list,
   .columns,
   .eval-tournaments,
   .walkthrough,
   .architecture-grid {
     grid-template-columns: 1fr;
   }
-  .directory {
+  .copy-btn,
+.menu-toggle {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #ffffff38;
+  border-radius: 8px;
+  color: white;
+  background: #0d1119df;
+  transition: background .2s, border-color .2s, transform .2s;
+}
+.copy-btn:hover,
+.menu-toggle:hover {
+  color: var(--gold);
+  border-color: var(--gold);
+}
+.directory {
     margin-block: 2.4rem;
-  }
-  .competition-art {
-    aspect-ratio: 2.25;
   }
   .section-head {
     align-items: end;
@@ -1510,12 +1159,6 @@ form button {
   .section-head .text-action {
     font-size: 0.76rem;
     white-space: nowrap;
-  }
-  .sponsor-band {
-    gap: 0.8rem;
-  }
-  .sponsor-symbol {
-    display: none;
   }
   .foot,
   .foot-project,
@@ -1567,27 +1210,6 @@ form button {
   .hero-story .btn > svg:first-child {
     width: 14px;
   }
-  .slide-top,
-  .slide-caption {
-    left: 0.6rem;
-    right: 0.6rem;
-  }
-  .slide-top {
-    top: 0.6rem;
-  }
-  .slide-caption {
-    bottom: 0.6rem;
-  }
-  .showcase-controls {
-    padding: 0.37rem;
-  }
-  .game-choices button {
-    font-size: 0.67rem;
-    padding: 0.35rem;
-  }
-  .slide-arrows button {
-    width: 24px;
-  }
   .foot-project {
     font-size: 0.71rem;
   }
@@ -1611,29 +1233,6 @@ form button {
     display: none;
   }
 }
-.nav-testnet {
-  display: none;
-}
-@media (min-width: 1160px) {
-  .nav-testnet {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    color: var(--muted);
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 99px;
-    font-size: 0.67rem;
-    padding: 0.28rem 0.6rem;
-  }
-  .nav-testnet i {
-    width: 0.43rem;
-    height: 0.43rem;
-    border-radius: 100%;
-    background: #4bd19a;
-  }
-}
-
 .data-notice {
   margin: 0 0 1rem;
   padding: 0.7rem 0.9rem;
@@ -1953,4 +1552,194 @@ form button {
 @media (prefers-reduced-motion: reduce) {
   .v3-option, .v3-published a { transition: none; }
   .v3-option:hover, .v3-published a:hover { transform: none; }
+}
+
+
+/* SUTIKA V3 public flows */
+.nav-language {
+  display: inline-grid;
+  place-items: center;
+  min-width: 2.65rem;
+  min-height: 2.65rem;
+  color: var(--text);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: .55rem;
+  font-size: .76rem;
+  font-weight: 750;
+}
+.nav-language:hover, .nav-language:focus-visible,
+.main-nav a[aria-current="page"] { color: var(--gold); }
+.hero-story h1 { max-width: 12ch; }
+.hero-story h1 em { display: block; }
+.hero-test-note {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  color: var(--muted);
+  font-size: .81rem;
+  margin-top: 1.1rem;
+}
+.hero-test-note svg { color: var(--mint); flex: none; }
+.hero-games {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .8rem;
+}
+.hero-game-card {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: flex-end;
+  min-width: 0;
+  min-height: clamp(255px, 32vw, 390px);
+  padding: 1.05rem;
+  overflow: hidden;
+  border: 1px solid #675c834d;
+  border-radius: 1rem;
+  background: #1a172a;
+  transition: border-color .2s, transform .2s;
+}
+.hero-game-card:first-child { background: #211f2a; }
+.hero-game-card img { z-index: -2; object-fit: cover; transition: transform .3s; }
+.hero-game-card::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  background: linear-gradient(0deg, #090b11 4%, #090b11dc 22%, #090b1130 57%, #10111c08 90%);
+}
+.hero-game-card:hover, .hero-game-card:focus-visible { border-color: var(--gold); transform: translateY(-3px); }
+.hero-game-card:hover img, .hero-game-card:focus-visible img { transform: scale(1.04); }
+.hero-game-card h2 { font-size: clamp(1.05rem, 2.25vw, 1.65rem); line-height: 1.06; }
+.hero-game-card p { color: #d5cfdf; font-size: .78rem; margin-top: .42rem; padding-right: .25rem; }
+.hero-game-format {
+  position: absolute;
+  top: .78rem;
+  left: .78rem;
+  padding: .2rem .55rem;
+  border-radius: .42rem;
+  background: #11121ced;
+  border: 1px solid #82799480;
+  color: white;
+  font-size: .76rem;
+  font-weight: 750;
+}
+.hero-game-arrow { position: absolute; top: .96rem; right: .8rem; color: #fff; filter: drop-shadow(0 1px 4px #000); }
+.home-roles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .75rem;
+  margin-top: 1rem;
+}
+.home-roles a {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  min-height: 4.65rem;
+  padding: .8rem 1.1rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: .9rem;
+}
+.home-roles a:hover, .home-roles a:focus-visible { border-color: var(--violet); }
+.home-roles svg { flex: none; color: var(--violet); }
+.home-roles strong, .home-roles small { display: block; }
+.home-roles small { color: var(--muted); margin-top: .15rem; }
+.home-empty { display: grid; gap: .65rem; }
+#torneos, #v3, #red, .guide-role[id], .eval-cup[id], .v3-room [id] { scroll-margin-top: 5rem; }
+.guide-fees { display: grid; gap: .8rem; }
+.guide-fees dd { text-align: right; }
+.guide-fees dd small { display: block; color: var(--muted); }
+.eval-proof-list { list-style: none; margin: 1.1rem 0 0; padding: 0; }
+.eval-proof-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .6rem 1.3rem;
+  padding-block: .85rem;
+  border-top: 1px solid var(--border);
+}
+.eval-proof-list h3 { font-size: 1rem; }
+.eval-proof-list p { margin: .2rem 0 0; }
+.v3-disclosure > summary { cursor: pointer; font-weight: 700; color: var(--text); }
+.v3-disclosure > summary span { color: var(--muted); font-weight: 500; }
+.v3-history, .v3-disclosure[open] > div { margin-top: .85rem; }
+.v3-history { display: grid; gap: .85rem; }
+.v3-create-header { margin-block: 1rem; }
+.v3-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  gap: .55rem;
+}
+.v3-steps li {
+  display: flex;
+  align-items: center;
+  gap: .42rem;
+  padding: .6rem .55rem;
+  min-height: 3.15rem;
+  border-bottom: 2px solid var(--border);
+  color: var(--muted);
+  font-size: .83rem;
+}
+.v3-steps li[aria-current="step"] { border-color: var(--gold); color: var(--gold); font-weight: 750; }
+.v3-steps li > span {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 1.4rem;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 50%;
+  background: #252035;
+}
+.v3-step-heading { scroll-margin-top: 6rem; }
+.v3-step-heading:focus { outline: none; }
+.v3-form label small { display: block; color: var(--muted); margin-top: .35rem; line-height: 1.45; }
+.v3-fields.v3-capacity { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.v3-money strong, .usdc-amount { flex: none; }
+.v3-money strong { max-width: 55%; }
+.usdc-amount { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.v3-summary dt { flex-shrink: 0; }
+.v3-summary dd:has(code) { min-width: 0; font-size: .78rem; }
+.v3-summary strong, .v3-room-amounts strong { font-variant-numeric: tabular-nums; }
+.v3-summary .v3-total strong, .v3-ranks > li > strong { color: var(--gold); }
+.v3-room-amounts { display: grid; gap: .75rem; align-content: start; }
+.v3-room-top { align-items: start; }
+.email-unavailable { display: grid; gap: .7rem; justify-items: start; }
+.wallet-access > form > * + * { margin-top: .6rem; }
+.wallet-funds { margin-block: .85rem; color: var(--muted); }
+.wallet-funds summary { cursor: pointer; color: var(--text); font-weight: 650; }
+.wallet-funds > :not(summary) { margin-top: .55rem; }
+
+@media (max-width: 760px) {
+  .hero-game-card { min-height: clamp(175px, 49vw, 320px); }
+  .home-roles { grid-template-columns: 1fr; gap: .5rem; }
+  .home-roles a { min-height: 3.6rem; }
+  .directory .section-head { align-items: start; flex-wrap: wrap; gap: .5rem; }
+  .v3-summary dl, .v3-summary .v3-money { padding-inline: .7rem; }
+}
+@media (max-width: 420px) {
+  .nav-create { padding-inline: .55rem; font-size: .74rem; gap: .28rem; }
+  .nav-create svg { width: 14px; }
+  .nav-language { min-width: 2.3rem; min-height: 2.5rem; }
+  .navbar .nav-actions { gap: .28rem; }
+  .hero-game-card { padding: .67rem; }
+  .hero-game-card p { min-block-size: 2.4em; }
+  .hero-games { gap: .55rem; }
+  .hero-game-format { left: .62rem; top: .62rem; }
+  .hero-game-arrow { right: .62rem; top: .77rem; width: 16px; }
+  .v3-steps li { padding-inline: .25rem; font-size: .74rem; }
+  .v3-money > div { gap: .4rem .55rem; }
+}
+@media (max-width: 345px) {
+  .nav-create svg { display: none; }
+  .brand-name { font-size: .95rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-game-card, .hero-game-card img { transition: none; }
+  .hero-game-card:where(:hover, :focus-visible), .hero-game-card:where(:hover, :focus-visible) img { transform: none; }
 }

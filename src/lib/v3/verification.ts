@@ -1,4 +1,6 @@
 import "server-only";
+import { PublicError } from "../errors.ts";
+import type { Locale } from "../locale";
 import { createHash, createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { database } from "../prisma";
 
@@ -11,7 +13,7 @@ export const verificationEnabled = () => Boolean(
 );
 
 async function sumsub(path: string, method: "POST" | "GET", body?: object) {
-  if (!verificationEnabled()) throw new Error("Falta habilitar la verificación en Sandbox.");
+  if (!verificationEnabled()) throw new PublicError("Falta habilitar la verificación en Sandbox.", "Sandbox verification is not enabled yet.");
   const timestamp = Math.floor(Date.now() / 1_000).toString();
   const payload = body && JSON.stringify(body);
   const signature = createHmac("sha256", process.env.SUMSUB_SANDBOX_SECRET_KEY!)
@@ -29,26 +31,26 @@ async function sumsub(path: string, method: "POST" | "GET", body?: object) {
     redirect: "error",
     signal: AbortSignal.timeout(10_000),
   });
-  if (!response.ok) throw new Error("El servicio de verificación de prueba no está disponible.");
+  if (!response.ok) throw new PublicError("El servicio de verificación de prueba no está disponible.", "Test verification is unavailable.");
   return response.json();
 }
 
-export async function sandboxLink(wallet: string) {
+export async function sandboxLink(wallet: string, locale: Locale) {
   const applicant = await database().sandboxVerification.upsert({
     where: { wallet },
     update: {},
     create: { wallet, subject: randomUUID() },
   });
-  const reply = await sumsub("/resources/sdkIntegrations/levels/-/websdkLink?lang=es", "POST", {
+  const reply = await sumsub("/resources/sdkIntegrations/levels/-/websdkLink?lang=" + locale, "POST", {
     userId: applicant.subject,
     levelName: level(),
     ttlInSecs: 600,
   });
-  if (typeof reply.url !== "string") throw new Error("No se recibió un enlace de verificación.");
+  if (typeof reply.url !== "string") throw new PublicError("No se recibió un enlace de verificación.", "The verification link was not received.");
   const url = new URL(reply.url);
   if (!["api.sumsub.com", "in.sumsub.com"].includes(url.hostname) || url.protocol !== "https:" ||
     url.port || url.username || url.password) {
-    throw new Error("El servicio entregó un enlace de verificación desconocido.");
+    throw new PublicError("El servicio entregó un enlace de verificación desconocido.", "The provider returned an unrecognized verification link.");
   }
   return url.toString();
 }
@@ -60,12 +62,12 @@ export async function verificationStatus(wallet: string) {
 export async function verifiedWallet(wallet: string) {
   const review = await database().sandboxVerification.findUnique({ where: { wallet } });
   if (!review?.applicant || review.status !== "APPROVED" || !review.reviewedAt) {
-    throw new Error("La identidad de prueba de este ganador sigue pendiente.");
+    throw new PublicError("La identidad de prueba de este ganador sigue pendiente.", "This winner's test verification is still pending.");
   }
   const response = await sumsub("/resources/applicants/" + encodeURIComponent(review.applicant) + "/status", "GET");
   if (response.reviewStatus !== "completed" || response.reviewResult?.reviewAnswer !== "GREEN" ||
     (response.levelName !== undefined && response.levelName !== level())) {
-    throw new Error("La aprobación del proveedor cambió. Comprueba el estado de nuevo.");
+    throw new PublicError("La aprobación del proveedor cambió. Comprueba el estado de nuevo.", "The provider's approval changed. Check the status again.");
   }
   const evidence = createHash("sha256").update(
     ["sumsub:sandbox", wallet, review.subject, review.reviewedAt.toISOString()].join(":"),

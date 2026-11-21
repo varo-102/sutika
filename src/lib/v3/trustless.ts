@@ -1,3 +1,4 @@
+import { PublicError } from "../errors.ts";
 import { createHash, randomBytes } from "node:crypto";
 import { Address, Contract, Networks, StrKey, Transaction, TransactionBuilder, scValToNative, xdr } from "@stellar/stellar-sdk";
 import { addr, bool, bytes, i128, struct, sym, textVal, u32, vec } from "./xdr.ts";
@@ -76,7 +77,7 @@ const endpoint = "https://beta.api.trustlesswork.com/escrow/multi-release/v2/";
 
 export async function confirmVendorFunding(escrow: string, sponsor: string, amount: bigint) {
   const key = process.env.TRUSTLESS_WORK_API_KEY;
-  if (!key) throw new Error("Falta configurar Trustless Work Testnet.");
+  if (!key) throw new PublicError("Falta configurar Trustless Work Testnet.", "Trustless Work Testnet is not configured.");
   const response = await fetch(endpoint + "fund", {
     method: "POST",
     headers: { "content-type": "application/json", "x-api-key": key },
@@ -85,22 +86,22 @@ export async function confirmVendorFunding(escrow: string, sponsor: string, amou
     redirect: "error",
     signal: AbortSignal.timeout(12_000),
   });
-  if (!response.ok) throw new Error("Trustless Work todavía no pudo preparar el depósito de prueba (" + response.status + ").");
+  if (!response.ok) throw new PublicError("Trustless Work no pudo preparar el depósito de prueba.", "Trustless Work could not prepare the test deposit.");
   const data = await response.json();
-  if (typeof data.unsignedXdr !== "string") throw new Error("La respuesta de Trustless Work está incompleta.");
+  if (typeof data.unsignedXdr !== "string") throw new PublicError("La respuesta de Trustless Work está incompleta.", "Trustless Work returned an incomplete response.");
   const tx = TransactionBuilder.fromXDR(data.unsignedXdr, Networks.TESTNET);
   if (!(tx instanceof Transaction) || tx.source !== sponsor || tx.signatures.length || tx.operations.length !== 1) {
-    throw new Error("La transacción de depósito tiene un formato inesperado.");
+    throw new PublicError("La transacción de depósito tiene un formato inesperado.", "The deposit transaction has an unexpected format.");
   }
   const op = tx.operations[0];
-  if (op.type !== "invokeHostFunction" || op.func.type !== "hostFunctionTypeInvokeContract" || (op.source && op.source !== sponsor)) throw new Error("El depósito no coincide.");
+  if (op.type !== "invokeHostFunction" || op.func.type !== "hostFunctionTypeInvokeContract" || (op.source && op.source !== sponsor)) throw new PublicError("El depósito no coincide.", "The deposit does not match the tournament.");
   const call = op.func.invokeContract;
   if (Address.fromScAddress(call.contractAddress).toString() !== escrow ||
     call.functionName.toString() !== "fund_escrow" ||
     call.args.length !== 3 ||
     scValToNative(call.args[0]) !== sponsor ||
     scValToNative(call.args[2]) !== amount) {
-    throw new Error("Trustless Work devolvió un depósito para otro importe o destinatario.");
+    throw new PublicError("Trustless Work devolvió un depósito para otro importe o destinatario.", "Trustless Work returned a different deposit amount or recipient.");
   }
   // The app builds the signed Core invocation separately. It binds and funds in one transaction.
 }

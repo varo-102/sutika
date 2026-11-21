@@ -38,12 +38,20 @@ export type RoomView = {
   rosters: RosterView[];
 };
 export type PublicReceipt = { kind: string; hash: string; date: string | undefined; context: Context };
-export const receiptLabels: Record<string, string> = {
-  create: "Torneo registrado", escrow: "Custodia abierta", fund: "Aporte del patrocinador",
-  join: "Inscripción confirmada", freeze: "Cierre de inscripciones", declare: "Resultado publicado",
-  approve: "Resultado aprobado", dispute: "Impugnación abierta", resolve: "Impugnación resuelta",
-  pay: "Premio entregado", cancel: "Torneo cancelado",
-  refund: "Cuota devuelta", refund_sponsor: "Aporte del patrocinador devuelto",
+export const receiptLabels: Record<string, { es: string; en: string }> = {
+  create: { es: "Torneo registrado", en: "Tournament registered" },
+  escrow: { es: "Reserva abierta", en: "Escrow opened" },
+  fund: { es: "Aporte del patrocinador", en: "Sponsor contribution" },
+  join: { es: "Inscripción confirmada", en: "Entry confirmed" },
+  freeze: { es: "Cierre de inscripciones", en: "Registration closed" },
+  declare: { es: "Resultado publicado", en: "Result published" },
+  approve: { es: "Resultado aprobado", en: "Result approved" },
+  dispute: { es: "Impugnación abierta", en: "Dispute opened" },
+  resolve: { es: "Impugnación resuelta", en: "Dispute resolved" },
+  pay: { es: "Premio entregado", en: "Prize delivered" },
+  cancel: { es: "Torneo cancelado", en: "Tournament canceled" },
+  refund: { es: "Cuota devuelta", en: "Entry fee refunded" },
+  refund_sponsor: { es: "Aporte del patrocinador devuelto", en: "Sponsor contribution refunded" },
 };
 
 export async function publicCompetition(slug: string) {

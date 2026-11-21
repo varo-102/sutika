@@ -1,4 +1,5 @@
 import "server-only";
+import { PublicError } from "../errors.ts";
 import { Address, BASE_FEE, Contract, Networks, rpc, scValToNative, StrKey, TransactionBuilder, xdr } from "@stellar/stellar-sdk";
 import old from "../deployment.json";
 import release from "./deployment.json";
@@ -103,7 +104,7 @@ export async function rostersOnChain(core: string, id: string, teams: Uint8Array
 export async function settingsOnChain(core: string) {
   const settings = await contractState<ChainSettings>(core, "Settings");
   if (!settings || settings.token !== usdc || settings.factory !== manifest.trustlessFactory) {
-    throw new Error("La configuración del contrato no coincide con Stellar Testnet.");
+    throw new PublicError("La configuración del contrato no coincide con Stellar Testnet.", "The contract settings do not match Stellar Testnet.");
   }
   return settings;
 }
@@ -111,13 +112,13 @@ export async function settingsOnChain(core: string) {
 export async function prepareTransaction(actor: string, operation: ReturnType<Contract["call"]>, joining: boolean) {
   const server = stellarV3();
   const account = await server.getAccount(actor).catch(() => {
-    throw new Error("Activa tu cuenta de Stellar Testnet antes de firmar.");
+    throw new PublicError("Activa tu cuenta de Stellar Testnet antes de firmar.", "Activate your Stellar Testnet account before signing.");
   });
   const tx = new TransactionBuilder(account, { fee: BASE_FEE, networkPassphrase: testnet })
     .addOperation(operation).setTimeout(120).build();
   const simulation = await server.simulateTransaction(tx);
   if (!rpc.Api.isSimulationSuccess(simulation)) {
-    throw new Error("Stellar rechazó la preparación. Revisa la billetera, el saldo de prueba y la etapa del torneo.");
+    throw new PublicError("Stellar rechazó la preparación. Revisa la billetera, el saldo de prueba y la etapa del torneo.", "Stellar could not prepare the operation. Check your wallet, test balance, and tournament status.");
   }
   if (joining) {
     // Registrations can land between simulation and execution. Leave 1 KiB for

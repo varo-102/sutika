@@ -1,16 +1,17 @@
 import "server-only";
+import { PublicError } from "./errors.ts";
 import { createHash, randomUUID } from "node:crypto";
 import { Keypair, StrKey } from "@stellar/stellar-sdk";
 import { database } from "./prisma";
 
 export function wallet(value: unknown) {
   if (typeof value !== "string" || !StrKey.isValidEd25519PublicKey(value))
-    throw new Error("Se necesita una billetera Stellar válida.");
+    throw new PublicError("Se necesita una billetera Stellar válida.", "A valid Stellar account is required.");
   return value;
 }
 export function shortText(input: unknown, max: number) {
   if (typeof input !== "string" || !input.trim() || input.trim().length > max)
-    throw new Error("Revisa los campos del formulario.");
+    throw new PublicError("Revisa los campos del formulario.", "Check the form fields.");
   return input.trim();
 }
 export type ActionInput = Record<string, unknown>;
@@ -66,7 +67,7 @@ export async function authorize(
     row.expiresAt <= new Date() ||
     row.digest !== intent
   )
-    throw new Error("La solicitud de firma venció o cambió.");
+    throw new PublicError("La solicitud de firma venció o cambió.", "The signature request expired or changed.");
   const bytes = createHash("sha256")
     .update(
       "Stellar Signed Message:\n" +
@@ -74,10 +75,10 @@ export async function authorize(
     )
     .digest();
   if (!Keypair.fromPublicKey(address).verify(bytes, Buffer.from(sig, "base64")))
-    throw new Error("La firma de la billetera es inválida.");
+    throw new PublicError("La firma de la billetera es inválida.", "The wallet signature is invalid.");
   const used = await db.walletChallenge.deleteMany({
     where: { id: key, expiresAt: { gt: new Date() } },
   });
   if (used.count !== 1)
-    throw new Error("Esta solicitud de firma ya fue utilizada.");
+    throw new PublicError("Esta solicitud de firma ya fue utilizada.", "This signature request has already been used.");
 }

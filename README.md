@@ -4,11 +4,13 @@ SUTIKA ayuda a organizadores y jugadores bolivianos a verificar premios de torne
 
 - **Pozos por inscripción.** Se puede usar patrocinio, cuotas de inscripción o una combinación. Una cuota de prueba vuelve a su remitente si el torneo se cancela.
 - **Premio para cinco titulares.** El reparto de Mobile Legends es 20 % por titular por defecto. El equipo puede acordar sus porcentajes al inscribirse.
-- **Confirmaciones en Stellar.** Sutika Core aplica el cierre de listas y 24 horas para impugnar. Trustless Work guarda el aporte patrocinado. Pollar ofrece el acceso con correo y Freighter conecta una cuenta de prueba existente.
+- **Confirmaciones en Stellar.** Sutika Core aplica el cierre de listas y 24 horas para impugnar. Trustless Work guarda el aporte patrocinado. Pollar ofrece acceso por correo al habilitar las billeteras Stellar de prueba. Varial (Freighter) permite conectar una cuenta existente en escritorio.
 
 ## Demostración
 
-La [demo pública del evento](https://sutika.vercel.app/evaluator) mantiene los registros confirmados de las dos copas originales. El código de la V3 ofrece un recorrido en `/create`, publica las fichas en `/c/[slug]` y conserva los comprobantes históricos en sus URLs originales. Las copas de la portada conservan un premio previsto de 5 USDC de prueba para el primer lugar.
+La [demo pública del evento](https://sutika.vercel.app/evaluator) mantiene los registros confirmados de las dos copas originales. La V3 tiene un formulario de tres pasos en `/create`, fichas en `/c/[slug]` y un evaluador público con comprobantes V3. El organizador elige el premio. Los 5 USDC de prueba se conservan como ejemplo en el archivo de las copas originales.
+
+El selector ES/EN conserva la página y los términos de la invitación. Las rutas originales abren en español. Agrega `/en` para abrir su versión en inglés.
 
 | Evidencia | Prueba pública |
 | --- | --- |
@@ -25,7 +27,7 @@ Stellar registra los movimientos. Testnet usa activos de prueba. Soroban ejecuta
 | Componente | Responsabilidad |
 | --- | --- |
 | Next.js, React y TypeScript | Creación, inscripción, firma y consulta de comprobantes. Región Vercel `gru1` en São Paulo. |
-| Pollar y Freighter | Acceso por código de correo o billetera en Testnet. El usuario firma la intención SEP-53 y la operación de Stellar. |
+| Pollar y Varial (Freighter) | Código de correo y billetera clásica de Testnet con Pollar, o conexión desde una extensión compatible. El usuario firma la intención SEP-53 y la operación de Stellar. |
 | PostgreSQL 19, Prisma y Neon | Fichas, operaciones, cuotas y reembolsos confirmados. Región `aws-sa-east-1` en São Paulo. |
 | Trustless Work Multi-Release V2 | El escrow patrocinado se crea en la fábrica pública de Testnet con un hito por posición. Su API prepara el depósito y Sutika Core vincula la custodia y fondea en la misma transacción. |
 | Sutika Core V3 | Inmoviliza cuotas, calcula reembolsos, congela plantillas, registra resultados y permite el reparto una vez cumplidas las condiciones de cobro. |
