@@ -42,9 +42,14 @@ impl TestEscrow {
         );
         let mut m: Map<Symbol, Val> = Map::new(&env);
         m.set(Symbol::new(&env, "receiver"), core.into_val(&env));
+        m.set(Symbol::new(&env, "amount"), FUNDED_AMOUNT.into_val(&env));
+        data.set(
+            Symbol::new(&env, "platform_fee"),
+            PLATFORM_FEE_BPS.into_val(&env),
+        );
         data.set(
             Symbol::new(&env, "milestones"),
-            vec![&env, m.clone(), m.clone(), m].into_val(&env),
+            vec![&env, m].into_val(&env),
         );
         data.set(Symbol::new(&env, "roles"), roles.into_val(&env));
         data.set(Symbol::new(&env, "trustline"), token.into_val(&env));
@@ -86,7 +91,7 @@ impl Fixture {
         let token = env.register_stellar_asset_contract_v2(admin).address();
         let core = env.register(SutikaCore, (&token,));
         let escrow = env.register(TestEscrow, (&token, transfer));
-        token::StellarAssetClient::new(&env, &token).mint(&escrow, &1_000);
+        token::StellarAssetClient::new(&env, &token).mint(&escrow, &FUNDED_AMOUNT);
         let client = SutikaCoreClient::new(&env, &core);
         let id = BytesN::from_array(&env, &[1; 32]);
         let organizer = Address::generate(&env);
@@ -108,7 +113,7 @@ impl Fixture {
         fixture_escrow.setup(&id, &organizer, &sponsor, &resolver, &core);
         client.bind_escrow(&id, &escrow);
         let mut teams = Vec::new(&env);
-        for _ in 0..3 {
+        for _ in 0..2 {
             let mut team = Vec::new(&env);
             for _ in 0..size {
                 team.push_back(Address::generate(&env));
@@ -130,11 +135,7 @@ impl Fixture {
     fn declare(&self) {
         let c = self.client();
         c.freeze(&self.id, &self.teams);
-        c.declare(
-            &self.id,
-            &vec![&self.env, 0, 1, 2],
-            &vec![&self.env, 101, 101, 101],
-        );
+        c.declare(&self.id, &vec![&self.env, 0], &vec![&self.env, WINNER_NET]);
     }
     fn advance(&self) {
         self.env.ledger().with_mut(|l| l.timestamp += WINDOW);
@@ -147,7 +148,7 @@ impl Fixture {
 #[test]
 fn rewards_one_and_five_once_after_cosign_and_window() {
     for size in [1u32, 5] {
-        let f = Fixture::new(size, 101);
+        let f = Fixture::new(size, WINNER_NET);
         f.declare();
         let c = f.client();
         assert_eq!(
@@ -166,18 +167,16 @@ fn rewards_one_and_five_once_after_cosign_and_window() {
         );
         c.release(&f.id, &1, &f.captain());
         let usdc = token::Client::new(&f.env, &f.token);
-        for (i, wallet) in f.teams.get(0).unwrap().iter().enumerate() {
-            assert_eq!(
-                usdc.balance(&wallet),
-                if size == 1 {
-                    101
-                } else if i == 0 {
-                    21
-                } else {
-                    20
-                }
-            );
+        for winner in f.teams.get(0).unwrap().iter() {
+            assert_eq!(usdc.balance(&winner), WINNER_NET / i128::from(size));
         }
+        for runner_up in f.teams.get(1).unwrap().iter() {
+            assert_eq!(usdc.balance(&runner_up), 0);
+        }
+        assert_eq!(
+            c.try_release(&f.id, &2, &f.captain()),
+            Err(Ok(Error::Invalid))
+        );
         assert_eq!(usdc.balance(&f.core), 0);
         assert_eq!(c.try_release(&f.id, &1, &f.captain()), Err(Ok(Error::Paid)));
     }
@@ -185,7 +184,7 @@ fn rewards_one_and_five_once_after_cosign_and_window() {
 
 #[test]
 fn mismatch_rolls_back_release_and_escrow_transfer() {
-    let f = Fixture::new(1, 99);
+    let f = Fixture::new(1, WINNER_NET - 1);
     f.declare();
     let c = f.client();
     c.approve(&f.id);
@@ -196,14 +195,14 @@ fn mismatch_rolls_back_release_and_escrow_transfer() {
     );
     assert_eq!(
         token::Client::new(&f.env, &f.token).balance(&f.escrow),
-        1000
+        FUNDED_AMOUNT
     );
     assert_eq!(c.tournament(&f.id).paid, 0);
 }
 
 #[test]
 fn disputes_and_frozen_rosters_are_enforced() {
-    let f = Fixture::new(1, 101);
+    let f = Fixture::new(1, WINNER_NET);
     let c = f.client();
     let duplicate = vec![
         &f.env,
@@ -223,7 +222,7 @@ fn disputes_and_frozen_rosters_are_enforced() {
     );
     c.resolve(&f.id, &false);
     assert!(!c.tournament(&f.id).approved);
-    c.declare(&f.id, &vec![&f.env, 1, 2, 0], &vec![&f.env, 101, 101, 101]);
+    c.declare(&f.id, &vec![&f.env, 1], &vec![&f.env, WINNER_NET]);
     assert_eq!(
         c.tournament(&f.id).release_at,
         f.env.ledger().timestamp() + WINDOW
@@ -232,8 +231,28 @@ fn disputes_and_frozen_rosters_are_enforced() {
 
 #[test]
 fn missing_wallet_signature_is_rejected() {
-    let f = Fixture::new(1, 101);
+    let f = Fixture::new(1, WINNER_NET);
     f.declare();
     f.env.set_auths(&[]);
     assert!(f.client().try_approve(&f.id).is_err());
+}
+
+#[test]
+fn accepts_only_one_winning_team_and_five_usdc() {
+    let f = Fixture::new(5, WINNER_NET);
+    let c = f.client();
+    c.freeze(&f.id, &f.teams);
+    assert_eq!(
+        c.try_declare(
+            &f.id,
+            &vec![&f.env, 0, 1],
+            &vec![&f.env, WINNER_NET, WINNER_NET]
+        ),
+        Err(Ok(Error::Invalid))
+    );
+    assert_eq!(
+        c.try_declare(&f.id, &vec![&f.env, 0], &vec![&f.env, WINNER_NET - 1]),
+        Err(Ok(Error::Invalid))
+    );
+    c.declare(&f.id, &vec![&f.env, 1], &vec![&f.env, WINNER_NET]);
 }

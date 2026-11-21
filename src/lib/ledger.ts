@@ -18,12 +18,12 @@ import { Prisma } from "@prisma/client";
 import { database } from "./prisma";
 import { getTournament, details } from "./tournamentsService";
 import { shortText, wallet, type ActionInput } from "./auth";
-import { deployment, SUTIKA_CONTRACT_ID } from "./stellar";
-import { display, prizeAmounts, split, units } from "./rules";
+import { deployment, SUTIKA_CONTRACT_ID, TESTNET_RPC_URL } from "./stellar";
+import { display, split, units, WINNER_FUNDING, WINNER_UNITS } from "./rules";
 
 const network = Networks.TESTNET;
 const usdc = deployment.usdc;
-const server = () => new rpc.Server("https://soroban-testnet.stellar.org");
+const server = () => new rpc.Server(TESTNET_RPC_URL);
 const addressVal = (s: string) => Address.fromString(s).toScVal();
 const u32 = (n: number) => xdr.ScVal.scvU32(n);
 const bytes = (hex: string) => xdr.ScVal.scvBytes(Buffer.from(hex, "hex"));
@@ -110,10 +110,15 @@ async function build(
     sponsor = wallet(t.sponsorWallet);
   const resolver = wallet(t.resolverWallet),
     id = bytes(t.ledgerId!);
-  const escrow = t.sorobanEscrowId,
-    amounts = t.prizes.map((p) =>
-      prizeAmounts(units(p.amountUsdc!.toString())),
-    );
+  const escrow = t.sorobanEscrowId;
+  const prize = t.prizes[0];
+  if (
+    t.prizes.length !== 1 ||
+    prize?.targetStanding !== 1 ||
+    !prize.amountUsdc ||
+    units(prize.amountUsdc.toString()) !== WINNER_UNITS
+  )
+    throw new Error("El premio configurado no coincide con el torneo.");
   if (
     (["anchor", "freeze", "declare", "mark"].includes(kind) && actor !== org) ||
     (["escrow", "bind", "fund", "approve_tw", "approve"].includes(kind) &&
@@ -136,7 +141,7 @@ async function build(
       signer: sponsor,
       engagementId: t.ledgerId,
       title: t.name,
-      description: "Premios al podio de Sutika",
+      description: "Premio al primer puesto de Sutika",
       roles: {
         approvers: [sponsor],
         serviceProviders: [org],
@@ -147,12 +152,14 @@ async function build(
       },
       trustline: { contractId: usdc },
       platformFee: 2,
-      milestones: amounts.map((p, index) => ({
-        description: "Puesto " + (index + 1),
-        amount: Number(display(p.gross)),
-        receiver: SUTIKA_CONTRACT_ID,
-        approvalsTarget: 1,
-      })),
+      milestones: [
+        {
+          description: "Primer puesto",
+          amount: Number(display(WINNER_FUNDING.gross)),
+          receiver: SUTIKA_CONTRACT_ID,
+          approvalsTarget: 1,
+        },
+      ],
     });
     if (!result.contractId || !StrKey.isValidContract(result.contractId))
       throw new Error("El proveedor no devolvió la dirección del escrow.");
@@ -167,7 +174,7 @@ async function build(
   if (!proof(t, "bind"))
     throw new Error("Primero vincula el escrow al torneo.");
   if (kind === "fund") {
-    const total = amounts.reduce((sum, p) => sum + p.gross, 0n);
+    const total = WINNER_FUNDING.gross;
     const result = await tw("fund", {
       contractId: escrow,
       signer: sponsor,
@@ -183,10 +190,10 @@ async function build(
   if (kind === "freeze") {
     const roster = rosterOf(t);
     if (
-      roster.length < 3 ||
+      roster.length < 2 ||
       roster.some((team) => team.length !== t.teamMaxSize)
     )
-      throw new Error("Se necesitan al menos tres plantillas completas.");
+      throw new Error("Se necesitan al menos dos plantillas completas.");
     const tx = await core(actor, "freeze", [
       id,
       vec(roster.map((team) => vec(team.map(addressVal)))),
@@ -195,23 +202,17 @@ async function build(
   }
   if (!t.rosterLocked) throw new Error("Primero congela las plantillas.");
   if (kind === "declare") {
-    if (
-      !Array.isArray(action.podium) ||
-      action.podium.length !== 3 ||
-      new Set(action.podium).size !== 3
-    )
-      throw new Error("Elige tres puestos diferentes.");
-    const podium = action.podium.map((p) => shortText(p, 80)),
-      indexes = podium.map((p) => t.teams.findIndex((team) => team.id === p));
-    if (indexes.includes(-1)) throw new Error("Equipo ajeno al torneo.");
+    const winner = shortText(action.winnerTeamId, 80);
+    const index = t.teams.findIndex((team) => team.id === winner);
+    if (index < 0) throw new Error("El ganador debe pertenecer al torneo.");
     const tx = await core(actor, "declare", [
       id,
-      vec(indexes.map(u32)),
-      vec(amounts.map((p) => i128(p.net))),
+      vec([u32(index)]),
+      vec([i128(WINNER_UNITS)]),
     ]);
-    return { ...tx, context: { podium } };
+    return { ...tx, context: { podium: [winner] } };
   }
-  if (t.podium.length !== 3) throw new Error("Primero publica el podio.");
+  if (t.podium.length !== 1) throw new Error("Primero declara al ganador.");
   if (kind === "mark" || kind === "approve_tw") {
     if (kind === "approve_tw" && !proof(t, "mark"))
       throw new Error("Falta registrar el resultado en el escrow.");
@@ -220,16 +221,18 @@ async function build(
         ? await tw("change-milestone-status", {
             contractId: escrow,
             serviceProvider: actor,
-            updates: [0, 1, 2].map((index) => ({
-              index,
-              newStatus: "completed",
-              newEvidence: t.publicSlug + " / " + t.podium[index],
-            })),
+            updates: [
+              {
+                index: 0,
+                newStatus: "completed",
+                newEvidence: t.publicSlug + " / " + t.podium[0],
+              },
+            ],
           })
         : await tw("approve-milestones", {
             contractId: escrow,
             approver: actor,
-            milestoneIndexes: [0, 1, 2],
+            milestoneIndexes: [0],
           });
     return { unsignedXdr: result.unsignedXdr, context: {} };
   }
@@ -251,7 +254,7 @@ async function build(
     ]);
     return { ...tx, context: { uphold: action.uphold } };
   }
-  if (kind !== "release" || ![1, 2, 3].includes(slot))
+  if (kind !== "release" || slot !== 1)
     throw new Error("Acción de pago inválida.");
   const team = t.teams.find((tm) => tm.id === t.podium[slot - 1]);
   if (!team) throw new Error("Falta el equipo ganador.");
@@ -268,7 +271,7 @@ async function build(
     context: {
       from: SUTIKA_CONTRACT_ID,
       to,
-      amounts: split(amounts[slot - 1].net, to.length).map(String),
+      amounts: split(WINNER_UNITS, to.length).map(String),
       core: SUTIKA_CONTRACT_ID,
       ledgerId: t.ledgerId!,
     },
@@ -320,12 +323,12 @@ function checkProviderTransaction(
       roles?.platform !== deployment.platform ||
       roles?.admin !== deployment.admin ||
       !Array.isArray(m) ||
-      m.length !== 3 ||
+      m.length !== 1 ||
       m.some(
-        (item, i) =>
+        (item) =>
           item.receiver !== SUTIKA_CONTRACT_ID ||
           Number(item.approvals?.target) !== 1 ||
-          item.amount !== units(t.prizes[i].amountUsdc!.toString()),
+          item.amount !== WINNER_FUNDING.gross,
       )
     )
       return invalid();
@@ -336,8 +339,7 @@ function checkProviderTransaction(
     kind === "fund" &&
     (fn !== "fund_escrow" ||
       args[0] !== actor ||
-      args[2] !==
-        t.prizes.reduce((a, p) => a + units(p.amountUsdc!.toString()), 0n))
+      args[2] !== WINNER_FUNDING.gross)
   )
     return invalid();
   if (
@@ -347,7 +349,7 @@ function checkProviderTransaction(
       !args.some(
         (v) =>
           Array.isArray(v) &&
-          v.length === 3 &&
+          v.length === 1 &&
           v.every((x, i) => Number(x) === i),
       ))
   )
@@ -359,7 +361,7 @@ function checkProviderTransaction(
       !args.some(
         (v) =>
           Array.isArray(v) &&
-          v.length === 3 &&
+          v.length === 1 &&
           v.every(
             (x, i) =>
               Number(x?.milestone_index) === i && x?.new_status === "completed",
@@ -371,10 +373,12 @@ function checkProviderTransaction(
 
 export async function prepare(actor: string, action: ActionInput) {
   const t = await getTournament(shortText(action.slug, 100));
-  if (!t?.ledgerId) throw new Error("Torneo no disponible.");
+  if (!t?.ledgerId || t.sorobanContractId !== SUTIKA_CONTRACT_ID)
+    throw new Error("Torneo no disponible para operaciones.");
   const kind = shortText(action.kind, 24),
     slot = kind === "release" ? Number(action.place) : 0;
-  if (!Number.isInteger(slot)) throw new Error("Puesto inválido.");
+  if (!Number.isInteger(slot) || (kind === "release" && slot !== 1))
+    throw new Error("Solo el primer puesto recibe premio.");
   const match = (o: { kind: string; slot: number }) =>
     o.kind === kind && o.slot === slot;
   const intent = createHash("sha256")

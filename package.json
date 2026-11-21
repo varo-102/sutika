@@ -18,11 +18,14 @@
     "migrate:deploy": "prisma migrate deploy"
   },
   "dependencies": {
+    "@fontsource-variable/inter": "5.3.0",
     "@pollar/core": "0.12.0",
     "@pollar/react": "0.12.0",
     "@prisma/adapter-pg": "7.10.1",
     "@prisma/client": "7.10.1",
+    "@stellar/freighter-api": "6.0.1",
     "@stellar/stellar-sdk": "17.4.0",
+    "lucide-react": "1.77.0",
     "next": "16.4.6",
     "react": "19.3.1",
     "react-dom": "19.3.1",

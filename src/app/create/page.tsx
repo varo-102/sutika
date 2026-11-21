@@ -1,16 +1,37 @@
-import WalletActions from "@/components/WalletActions";
-export const metadata = { title: "Crear torneo" };
+import Link from "next/link";
+import { ArrowLeft, CirclePlus, Crown } from "lucide-react";
+import CreateTournamentForm from "@/components/CreateTournamentForm";
+export const metadata = { title: "Nuevo torneo" };
 export default function Create() {
   return (
     <div className="narrow">
-      <p className="eyebrow">Organizadores</p>
-      <h1>Crear torneo</h1>
-      <p>
-        Define el podio y el patrocinador. La custodia aparecerá cuando su
-        depósito se confirme en Stellar.
-      </p>
+      <Link className="inline-link" href="/#torneos">
+        <ArrowLeft />
+        Volver a torneos
+      </Link>
+      <header className="eval-banner">
+        <div className="eval-title">
+          <span className="icon-tile gold">
+            <CirclePlus />
+          </span>
+          <div>
+            <p className="eyebrow">Organizadores</p>
+            <h1>Nuevo torneo</h1>
+          </div>
+        </div>
+        <p>
+          Elige el juego, ponle un nombre y revisa el premio. Puedes preparar la
+          ficha antes de conectar tu cuenta de prueba.
+        </p>
+      </header>
       <section className="panel">
-        <WalletActions />
+        <div className="block-heading">
+          <span className="accent-icon violet">
+            <Crown />
+          </span>
+          <h2>Configurar la competencia</h2>
+        </div>
+        <CreateTournamentForm />
       </section>
     </div>
   );

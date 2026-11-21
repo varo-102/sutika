@@ -4,7 +4,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { database } from "./prisma";
 import { shortText, wallet, type ActionInput } from "./auth";
-import { gameOf, games, units } from "./rules";
+import { gameOf, games, WINNER_USDC } from "./rules";
 
 export const details = {
   organizer: { select: { stellarSmartWalletAddress: true } },
@@ -40,7 +40,10 @@ export async function getTournament(slug: string) {
 }
 export async function listTournaments() {
   return database().tournament.findMany({
-    where: { category: { in: ["CLASH_ROYALE", "MOBILE_LEGENDS"] } },
+    where: {
+      sorobanContractId: deployment.contractId,
+      category: { in: ["CLASH_ROYALE", "MOBILE_LEGENDS"] },
+    },
     orderBy: { createdAt: "desc" },
     take: 40,
     select: {
@@ -48,11 +51,13 @@ export async function listTournaments() {
       category: true,
       publicSlug: true,
       _count: { select: { participants: true } },
-      prizes: { select: { amountUsdc: true } },
+      prizes: {
+        where: { targetStanding: 1 },
+        select: { amountUsdc: true, claimStatus: true },
+      },
       ledgerOperations: {
-        where: { kind: "fund", status: "CONFIRMED" },
-        select: { id: true },
-        take: 1,
+        where: { kind: { in: ["fund", "release"] }, status: "CONFIRMED" },
+        select: { kind: true },
       },
     },
   });
@@ -66,13 +71,13 @@ export async function createTournament(address: string, action: ActionInput) {
     throw new Error(
       "Organizador, patrocinador y árbitro necesitan billeteras diferentes.",
     );
-  if (!Array.isArray(action.amounts) || action.amounts.length !== 3)
-    throw new Error("Completa los tres importes del podio.");
-  const amounts = action.amounts.map((n) => {
-    const s = String(n);
-    units(s);
-    return s;
-  });
+  if (
+    action.amounts !== undefined ||
+    (action.winnerAmount !== undefined && action.winnerAmount !== WINNER_USDC)
+  )
+    throw new Error(
+      "El torneo entrega un único premio de 5 USDC al primer puesto.",
+    );
   const id = randomUUID();
   const namePart = name
     .normalize("NFD")
@@ -95,20 +100,21 @@ export async function createTournament(address: string, action: ActionInput) {
         organizerId: organizer.id,
         category,
         teamMaxSize: games[category].size,
+        sorobanContractId: deployment.contractId,
         sponsorWallet: sponsor,
         resolverWallet: resolver,
         ledgerId: createHash("sha256")
           .update("sutika:testnet:" + id)
           .digest("hex"),
         prizes: {
-          create: amounts.map((amount, i) => ({
-            targetStanding: i + 1,
+          create: {
+            targetStanding: 1,
             prizeType: "USDC_TOKEN",
             sponsorName: "Patrocinador",
             sponsorWalletOrId: sponsor,
-            amountUsdc: amount,
+            amountUsdc: WINNER_USDC,
             requiredKycLevel: "NONE",
-          })),
+          },
         },
       },
     });
@@ -125,6 +131,7 @@ export async function join(address: string, action: ActionInput) {
     const t = await tx.tournament.findUnique({ where: { publicSlug: slug } });
     if (
       !t?.ledgerId ||
+      t.sorobanContractId !== deployment.contractId ||
       t.rosterLocked ||
       (await tx.ledgerOperation.count({
         where: {
