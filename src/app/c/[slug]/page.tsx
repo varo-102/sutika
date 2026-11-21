@@ -104,7 +104,7 @@ export default async function V3Tournament({ params, searchParams }: {
   return <div className="v3-room">
     <Link className="inline-link" href="/#torneos"><ArrowLeft /> Volver a torneos</Link>
     <header className="v3-hero">
-      <Image src={art.hero} alt={art.heroAlt} fill sizes="(max-width: 700px) 100vw, 1100px" style={{ objectPosition: art.position }} fetchPriority="high" />
+      <Image src={art.hero} alt={art.heroAlt} fill sizes="(max-width: 700px) 100vw, 1100px" style={{ objectPosition: art.position }} loading="eager" fetchPriority="high" />
       <div className="v3-hero-content">
         <p className="eyebrow">{game.name} · {game.format}</p>
         <h1>{competition.name}</h1>

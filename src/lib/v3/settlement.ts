@@ -58,7 +58,7 @@ export async function prepare(actor: string, action: ActionInput, kind: V3Kind) 
   }
 
   const { operation, context } = await build(row, actor, action, kind);
-  const ready = await prepareTransaction(actor, operation);
+  const ready = await prepareTransaction(actor, operation, kind === "join");
   const hash = hex(ready.hash());
   const expiresAt = new Date(Number(ready.timeBounds?.maxTime) * 1000);
   const tx = await db.competitionOperationV3.upsert({

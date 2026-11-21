@@ -108,7 +108,7 @@ export async function settingsOnChain(core: string) {
   return settings;
 }
 
-export async function prepareTransaction(actor: string, operation: ReturnType<Contract["call"]>) {
+export async function prepareTransaction(actor: string, operation: ReturnType<Contract["call"]>, joining: boolean) {
   const server = stellarV3();
   const account = await server.getAccount(actor).catch(() => {
     throw new Error("Activa tu cuenta de Stellar Testnet antes de firmar.");
@@ -118,6 +118,14 @@ export async function prepareTransaction(actor: string, operation: ReturnType<Co
   const simulation = await server.simulateTransaction(tx);
   if (!rpc.Api.isSimulationSuccess(simulation)) {
     throw new Error("Stellar rechazó la preparación. Revisa la billetera, el saldo de prueba y la etapa del torneo.");
+  }
+  if (joining) {
+    // Registrations can land between simulation and execution. Leave 1 KiB for
+    // the remaining team IDs, with a 0.0005 XLM Testnet resource allowance.
+    const { resources, resourceFee } = simulation.transactionData.build();
+    simulation.transactionData
+      .setResources(resources.instructions, resources.diskReadBytes, resources.writeBytes + 1024)
+      .setResourceFee(resourceFee + 5000n);
   }
   return rpc.assembleTransaction(tx, simulation).build();
 }

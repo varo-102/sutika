@@ -141,7 +141,7 @@ export default async function Evaluator() {
       <section className="eval-block" id="v3">
         <div className="block-heading">
           <span className="accent-icon gold"><Coins /></span>
-          <div><h2>Operaciones confirmadas de la V3</h2><p>Ensayos de depósito y devolución con USDC de Stellar Testnet.</p></div>
+          <div><h2>Operaciones confirmadas de la V3</h2><p>Fondeo, reembolsos y resultados comprobables en Stellar Testnet. El pago a los ganadores sigue pendiente.</p></div>
         </div>
         <div className="spec-grid">
           {proofs.map((proof) => <article key={proof.hash}>

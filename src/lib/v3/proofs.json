@@ -22,5 +22,17 @@
     "text": "0,25 USDC de prueba recibidos por el mismo aportante.",
     "hash": "0991f942c719fbd3df6a8233c59665a6b95ef09eaa072a8459150b8b3648c472",
     "action": "Ver reembolso"
+  },
+  {
+    "title": "Resultado 1v1",
+    "text": "Resultado de Clash Royale con 4 jugadores registrado en Testnet.",
+    "hash": "90ba69c3f61071861983685c768cd975a7b9864e9b037118d34c1c99c8dfe423",
+    "action": "Ver resultado 1v1"
+  },
+  {
+    "title": "Resultado 5v5",
+    "text": "Resultado de Mobile Legends con 4 equipos y premio pendiente de cobro.",
+    "hash": "58bac18d26afd5c4a40950135cbfb370e3992f6d19bd40a4269a7bb3c084b3f7",
+    "action": "Ver resultado 5v5"
   }
 ]
