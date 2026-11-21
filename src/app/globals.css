@@ -202,6 +202,27 @@ code,
   object-fit: contain;
 }
 .brand-name,
+.foot-community {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.9rem;
+  font-size: 0.78rem;
+}
+.foot-community a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.25rem;
+  color: var(--text);
+  transition: color .18s ease;
+}
+.foot-community a:hover,
+.foot-community a:focus-visible {
+  color: var(--gold);
+}
+.foot-community svg {
+  color: var(--violet);
+}
 .footer-logo {
   font-size: 1.27rem;
   font-weight: 850;
@@ -799,6 +820,27 @@ footer {
   gap: 0.65rem;
   flex-wrap: wrap;
   font-size: 0.75rem;
+}
+.foot-community {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.9rem;
+  font-size: 0.78rem;
+}
+.foot-community a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.25rem;
+  color: var(--text);
+  transition: color .18s ease;
+}
+.foot-community a:hover,
+.foot-community a:focus-visible {
+  color: var(--gold);
+}
+.foot-community svg {
+  color: var(--violet);
 }
 .footer-logo {
   font-size: 0.88rem;

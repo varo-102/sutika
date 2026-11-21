@@ -6,8 +6,10 @@ import {
   Crown,
   ExternalLink,
   Gamepad2,
+  Send,
   Wallet,
 } from "lucide-react";
+import { communityLinks } from "@/lib/communityLinks";
 
 export const metadata = { title: "Cómo funciona" };
 
@@ -133,6 +135,9 @@ export default function Guide() {
             rel="noreferrer"
           >
             Stellar Testnet <ExternalLink />
+          </a>
+          <a className="btn btn-outline" href={communityLinks.telegram} target="_blank" rel="noopener noreferrer">
+            <Send /> Consultar en Telegram <ExternalLink size={16} />
           </a>
         </div>
       </section>

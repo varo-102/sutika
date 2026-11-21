@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Music2, Send } from "lucide-react";
+import { communityLinks } from "@/lib/communityLinks";
 import Navbar from "@/components/Navbar";
 import { deployment } from "@/lib/stellar";
 import "./globals.css";
@@ -31,6 +33,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </Link>
               <span>Verdad y Claridad a Plena Luz (Sut&apos;i)</span>
             </div>
+            <nav className="foot-community" aria-label="Soporte y redes de Sutika">
+              <a href={communityLinks.telegram} target="_blank" rel="noopener noreferrer">
+                <Send size={16} aria-hidden="true" /> Soporte en Telegram
+              </a>
+              <a href={communityLinks.tiktok} target="_blank" rel="noopener noreferrer">
+                <Music2 size={16} aria-hidden="true" /> @sutikatorneos en TikTok
+              </a>
+            </nav>
             <div className="foot-project">
               <span>Construido para el Hackathon Stellar &amp; Soroban</span>
               <Link href="/evaluator#red" className="foot-network">
