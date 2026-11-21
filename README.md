@@ -1,67 +1,67 @@
-# Sutika — Patrocinios y Premios Verificables en Stellar Soroban
+# Sutika
 
-Plataforma de confianza, custodia de premios (*Promotional Escrow*) y activación comercial de sponsors para torneos deportivos (fútbol 7/11, futsal, voleibol, básquetbol), competencias individuales (ajedrez), esports (Dota 2) y hackatones sobre **Stellar** y **Soroban**.
+Sutika permite que un patrocinador boliviano fondee premios en USDC de Stellar Testnet para un torneo de Clash Royale (individual) o Mobile Legends: Bang Bang (cinco titulares). El organizador inscribe los equipos y publica el podio. Los ganadores pueden seguir el recorrido del premio desde el depósito hasta sus billeteras.
 
----
+## Probar y verificar
 
-## 🚀 Despliegue en Stellar Testnet
+Abre **Modo evaluador** en la vista previa del PR o en `/evaluator` al ejecutar la aplicación. Las dos copas identificadas como «de prueba» son escenarios técnicos. Su inscripción y pago no cuentan como tracción comercial. La aplicación muestra el estado que acreditan Neon y Stellar.
 
-- **Contrato Soroban:** [`CDDXP3Q3I3T77BRG65F7FB5Q2CA4WLWO5AKYSLZTOLUTTMWVO5B2TA2T`](https://stellar.expert/explorer/testnet/contract/CDDXP3Q3I3T77BRG65F7FB5Q2CA4WLWO5AKYSLZTOLUTTMWVO5B2TA2T)
-- **Cuenta Deployer / Funder:** [`GDTKODWTQGQUJ2RKUB4PIWA54VCEBJTNC3XFYRJMWEQKF7YXL2JYSLDR`](https://stellar.expert/explorer/testnet/account/GDTKODWTQGQUJ2RKUB4PIWA54VCEBJTNC3XFYRJMWEQKF7YXL2JYSLDR)
-- **Red:** Stellar Testnet (Protocol 22)
-- **RPC:** `https://soroban-testnet.stellar.org`
+| Evidencia de Testnet | Identificador público |
+| --- | --- |
+| Programa compilado, SHA-256 | `956a099a44a59167ddf4f44f9620e653f162d52b0fd0cb25c73d8739f24757e1` |
+| Instancia de Sutika Core | [CDP6M3LLHZPXFAWM7O2I6ZQHG2WYSRY6GCNNJZYDXDZSNZKGBWAYAI57](https://stellar.expert/explorer/testnet/contract/CDP6M3LLHZPXFAWM7O2I6ZQHG2WYSRY6GCNNJZYDXDZSNZKGBWAYAI57) |
+| Carga del WASM | [Transacción de carga](https://stellar.expert/explorer/testnet/tx/22fd68baa010ccb55500110558d77ef7b3073b39c1f9003dc685d47adf15cbb0) |
+| Despliegue | [Transacción de despliegue](https://stellar.expert/explorer/testnet/tx/8fd5f2acbeb8e333ba9e0ac083c6f786fa318b661cdb5bdd662f46d1d52d9783) |
+| Registro de la copa Clash Royale | [732f95506c1561e1844b585d51d593d0894b046fd61536ed328b2c3316aebf29](https://stellar.expert/explorer/testnet/tx/732f95506c1561e1844b585d51d593d0894b046fd61536ed328b2c3316aebf29) |
+| Registro de la copa Mobile Legends | [205a6e39c6fdceb5770930f4500efe1699f1d166ba5c1f674f0221416582c6c8](https://stellar.expert/explorer/testnet/tx/205a6e39c6fdceb5770930f4500efe1699f1d166ba5c1f674f0221416582c6c8) |
+| Saldo de la billetera de prueba del patrocinador | [40 USDC de Testnet disponibles para las dos copas](https://stellar.expert/explorer/testnet/tx/0e9efb5e0a2ba7aeaed4e8cde12f90d6e89c64859ea921073822bd7e07923321). El activo sigue en esa billetera hasta la confirmación del fondeo. |
+| Depósito y reparto | Consultar el historial de cada torneo. A la publicación de esta revisión, ambos están pendientes. |
 
----
+**Stellar** es la red donde se verifican los movimientos. **Testnet** usa activos de prueba. **Soroban** ejecuta las reglas escritas en Rust. El **ID del contrato** identifica la instancia que aplica esas reglas. Para comprobar un premio, abre la transacción de pago y coteja los movimientos de USDC hacia cada ganador.
 
-## 🛠️ Tecnologías
+## Arquitectura y recorrido
 
-- **Smart Contracts:** Rust, Soroban SDK v28, Stellar CLI v28
-- **Frontend & Fullstack:** Next.js 14+ (App Router), React 18, Tailwind CSS, Lucide Icons
-- **Base de Datos & ORM:** Neon Serverless PostgreSQL + Prisma ORM
-- **Identidad & Criptografía:** SHA-256 IdentityCommitmentHash (Claim-Gated KYC), SEP-41 Token & Escrow Events
+| Componente | Responsabilidad |
+| --- | --- |
+| Next.js, React y TypeScript | Portada, inscripción, firma, confirmación y consulta pública. Las funciones de Vercel usan São Paulo (`gru1`). |
+| Pollar | Acceso y billeteras en Test mode. La firma SEP-53 acredita control de la billetera que solicita una escritura. El MVP no recoge documentos personales para los torneos nuevos. |
+| PostgreSQL 19 y Prisma | Guarda competiciones, equipos, intenciones firmadas y los comprobantes confirmados. El proyecto de Neon usa São Paulo (`aws-sa-east-1`). |
+| Trustless Work Multi-Release V2 | API de Testnet para preparar XDR de despliegue, fondeo, hitos y aprobaciones. Cada puesto tiene un hito y el registro de Sutika es su destinatario programado. V2 está en beta en Testnet. |
+| Sutika Core | Vincula custodia y torneo, congela plantillas, registra el podio, aplica una ventana de 24 horas y reparte USDC. La operación revierte si el neto recibido difiere del monto aprobado. |
 
----
+1. El organizador crea un torneo con tres premios y registra el torneo en Stellar. Cada jugador firma su propia inscripción con su billetera. Para operar se necesitan cuentas de Testnet activas, una aplicación Pollar de prueba y USDC de prueba en la cuenta del patrocinador. Los receptores deben poder recibir el activo (trustline en las cuentas clásicas).
+2. El patrocinador crea y vincula el escrow, y deposita USDC. La interfaz confirma ese depósito al verificar el contrato del token, el importe y el destinatario en los eventos de Stellar.
+3. El organizador congela al menos tres plantillas completas, declara tres puestos diferentes y registra los resultados en los hitos. El patrocinador aprueba los hitos y el podio. El periodo de impugnación empieza con la declaración en el ledger. El árbitro puede ratificar el podio o devolverlo para su corrección.
+4. Tras 24 horas, un integrante premiado solicita el cobro. Sutika Core invoca al escrow, comprueba el cambio de saldo y transfiere el neto a uno o cinco ganadores dentro de la misma transacción. Los residuos de la división se asignan en el orden que quedó congelado. El servidor verifica el evento de Sutika y todas las transferencias SEP-41 antes de persistir «pago confirmado».
+5. Una firma rechazada, un fallo de red o una transacción pendiente dejan un estado visible. La consulta reutiliza el hash guardado. Las cuentas de organizador, patrocinador y árbitro deben ser distintas.
 
-## ⚙️ Variables de Entorno para Vercel y Local
+El sistema de disputas propio del proveedor conserva las facultades de sus árbitros. El control de billetera del MVP acredita autorización para reclamar. La comprobación documental de identidad y las rampas fiat son trabajo futuro. [Core API V2](https://docs.trustlesswork.com/trustless-work/v2-en/api-rest/introduction) · [Pollar](https://docs.pollar.xyz/docs/getting-started/quickstart)
 
-Configura las siguientes variables en tu archivo `.env.local` o en el panel de **Vercel** (`Settings > Environment Variables`):
+## Ejecutar la web
 
-```env
-DATABASE_URL="postgresql://neondb_owner:TU_PASSWORD@ep-TU-ID.us-east-2.aws.neon.tech/neondb?sslmode=require"
-NEXT_PUBLIC_STELLAR_NETWORK="TESTNET"
-NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE="Test SDF Network ; September 2015"
-NEXT_PUBLIC_SOROBAN_RPC_URL="https://soroban-testnet.stellar.org"
-NEXT_PUBLIC_SUTIKA_CONTRACT_ID="CDDXP3Q3I3T77BRG65F7FB5Q2CA4WLWO5AKYSLZTOLUTTMWVO5B2TA2T"
-```
+Usa Node 26.13.1 LTS y npm 12.2.3. Copia `.env.example` a `.env.local`. Carga la conexión agrupada de Neon en `DATABASE_URL` y la directa en `DIRECT_URL`. Para firmar y fondear, configura `NEXT_PUBLIC_POLLAR_PUBLISHABLE_KEY` con una clave `pub_testnet_` y `TRUSTLESS_WORK_API_KEY` con la clave de la Core API V2 de prueba. Agrega el origen exacto del navegador a los permitidos en Pollar. Los identificadores y roles de esta demo se publican en `src/lib/deployment.json`.
 
----
-
-## 📦 Comandos Rápidos
-
-```bash
-# Instalar dependencias
-npm install
-
-# Generar cliente de Prisma
-npx prisma generate
-
-# Sincronizar esquema con la base de datos Neon
-npx prisma db push
-
-# Ejecutar seed de prueba
+```sh
+npm ci
+npm run migrate:deploy
 npm run seed
-
-# Ejecutar en desarrollo
 npm run dev
-
-# Compilar para producción
-npm run build
 ```
 
----
+El seed es idempotente y usa roles de prueba predeterminados. Para probar tus propias billeteras, crea un torneo desde la interfaz. El migrador incluye la línea base histórica y una migración aditiva para esports. En una base con datos de la versión original se debe reconciliar la línea base antes de ejecutar las migraciones. En Vercel, configura las cuatro variables, aplica las migraciones por conexión directa y despliega el commit revisado en el proyecto existente.
 
-## 🏆 Criterios de Evaluación para Hackathons
+## Verificación de la entrega
 
-1. **Modo Evaluador Integrado (`/evaluator`):** Guía interactiva que permite a los jurados auditar los contratos en Stellar Expert y probar el ciclo de vida completo en menos de 2 minutos.
-2. **Custodia Criptográfica Real:** La función `claim_podium_prize` y la emisión de recibos (*Proof of Prize Delivery*) se ejecutan de manera verificable en Soroban Testnet.
-3. **Privacidad de Identidad (PII Vault):** Los datos personales y documentos no se escriben en texto plano en la blockchain; únicamente se almacena el hash criptográfico `IdentityHash`.
+```sh
+npm run typecheck
+npm test
+npm audit --audit-level=high
+npm run build
+cd contracts/sutika-core
+cargo test --locked
+stellar contract build
+```
+
+El proyecto fija Rust 1.100.0, Soroban SDK 29.0.1 y Stellar CLI 30.0.1. El WASM se genera en `target/wasm32v1-none/release/sutika_core.wasm`. El constructor recibe el contrato de USDC de **Testnet** que figura en el manifiesto de despliegue. El contrato anterior queda como referencia histórica; la demo usa la instancia indicada arriba.
+
+El organizador usa Sutika gratis. El patrocinador aporta el pozo bruto, del que se desglosan una comisión de plataforma de prueba del 2 % y una comisión de protocolo del 0,3 %. El cliente ve el neto de cada puesto. La hipótesis de precio de Sutika es del 1–3 %. [Modelo de negocio y plan de 30 días para Atlas](docs/atlas.md)

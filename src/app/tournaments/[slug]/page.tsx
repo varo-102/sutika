@@ -1,187 +1,184 @@
-import { notFound } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
+import ReceiptStatus from "@/components/ReceiptStatus";
+import { notFound } from "next/navigation";
+import WalletActions from "@/components/WalletActions";
+import { getTournament } from "@/lib/tournamentsService";
 import {
-  Trophy,
-  Users,
-  ShieldCheck,
-  Calendar,
-  Sparkles,
-  ArrowLeft,
-  ExternalLink,
-  MessageCircle,
-  Lock,
-} from "lucide-react";
-import { getTournamentBySlug } from "@/lib/tournamentsService";
-import VerificationBadge from "@/components/VerificationBadge";
-import PrizeVaultWidget from "@/components/PrizeVaultWidget";
-import UpgradeToOnChainButton from "@/components/UpgradeToOnChainButton";
-import { getExplorerContractUrl, getExplorerTxUrl } from "@/lib/stellar";
-
-export const revalidate = 0;
-
-interface PageProps {
-  params: { slug: string };
-}
-
-export default async function TournamentDetailPage({ params }: PageProps) {
-  const tournament = await getTournamentBySlug(params.slug);
-
-  if (!tournament) {
-    notFound();
-  }
-
-  const isEsportsOrTech =
-    tournament.category === "ESPORTS_DOTA" ||
-    tournament.category === "HACKATHON" ||
-    tournament.category === "CHESS";
-
-  const bannerImg = isEsportsOrTech
-    ? "/images/hero-esports.jpeg"
-    : "/images/hero-sports.jpeg";
-
+  deployment,
+  getExplorerContractUrl,
+  getExplorerTxUrl,
+} from "@/lib/stellar";
+import { games, gameOf, display, prizeAmounts, units } from "@/lib/rules";
+export const dynamic = "force-dynamic";
+const labels: Record<string, string> = {
+  anchor: "Registro del torneo",
+  escrow: "Despliegue del escrow",
+  bind: "Vínculo de la custodia",
+  fund: "Depósito de USDC",
+  freeze: "Plantillas congeladas",
+  declare: "Podio declarado",
+  mark: "Resultado en custodia",
+  approve_tw: "Hitos aprobados",
+  approve: "Podio aprobado",
+  dispute: "Impugnación",
+  resolve: "Resolución",
+  release: "Pago de premio",
+};
+export default async function TournamentPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const t = await getTournament(slug);
+  if (!t) notFound();
+  if (!t.ledgerId)
+    return (
+      <section className="narrow">
+        <Link href="/">← Torneos</Link>
+        <p className="eyebrow">Archivo</p>
+        <h1>{t.name}</h1>
+        <p>Este registro histórico pertenece a la primera versión de Sutika.</p>
+      </section>
+    );
+  const game = games[gameOf(t.category)],
+    funded = t.ledgerOperations.some(
+      (o) => o.kind === "fund" && o.status === "CONFIRMED",
+    );
+  const receipts = t.ledgerOperations.filter((o) =>
+    ["CONFIRMED", "SUPERSEDED"].includes(o.status),
+  );
+  const opened = receipts.find(
+    (o) => o.kind === "declare" && o.status === "CONFIRMED",
+  )?.confirmedAt;
   return (
-    <div className="space-y-8">
-      {/* Back Button */}
-      <Link
-        href="/"
-        className="inline-flex items-center gap-2 text-xs font-semibold text-sutika-muted hover:text-white transition"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        <span>Volver a Torneos</span>
-      </Link>
-
-      {/* Header Banner with Rich Visual Background */}
-      <div className="rounded-3xl border border-sutika-border bg-sutika-card p-6 sm:p-10 shadow-2xl relative overflow-hidden">
-        {/* Background Photo with Gradient Fade */}
-        <div className="absolute inset-0 opacity-20 pointer-events-none">
-          <Image
-            src={bannerImg}
-            alt={tournament.name}
-            fill
-            className="object-cover object-center"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-sutika-card via-sutika-card/90 to-sutika-card/60" />
+    <>
+      <section className="heading">
+        <Link href="/">← Torneos</Link>
+        <p className="eyebrow">
+          {game.name} · {game.format}
+        </p>
+        <h1>{t.name}</h1>
+        <p>
+          {t.rosterLocked ? "Inscripciones cerradas" : "Inscripciones abiertas"}{" "}
+          · {funded ? "Depósito confirmado" : "Depósito pendiente"} · Stellar
+          Testnet
+        </p>
+      </section>
+      <section>
+        <h2>Premios al podio</h2>
+        <div className="prizes">
+          {t.prizes.map((p) => {
+            const money = prizeAmounts(units(p.amountUsdc!.toString()));
+            return (
+              <article className="panel" key={p.id}>
+                <p className="eyebrow">Puesto {p.targetStanding}</p>
+                <h3>{display(money.net)} USDC</h3>
+                <p>
+                  Bruto {display(money.gross)} · Plataforma{" "}
+                  {display(money.platform)} · Protocolo{" "}
+                  {display(money.protocol)}
+                </p>
+                <strong>
+                  {p.claimStatus === "CLAIMED_VERIFIED"
+                    ? "Pago confirmado"
+                    : funded
+                      ? "En custodia"
+                      : "Por fondear"}
+                </strong>
+                {p.sorobanTxHash && (
+                  <p>
+                    <a href={getExplorerTxUrl(p.sorobanTxHash)}>
+                      Comprobante del pago ↗
+                    </a>
+                  </p>
+                )}
+              </article>
+            );
+          })}
         </div>
-
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="max-w-2xl">
-            <div className="flex flex-wrap items-center gap-3 mb-4">
-              <span className="text-xs px-3 py-1 rounded-md bg-sutika-bg/90 backdrop-blur-md border border-sutika-border font-bold text-white uppercase tracking-wider">
-                {tournament.category.replace("_", " ")}
-              </span>
-
-              <VerificationBadge
-                mode={tournament.mode}
-                contractId={tournament.sorobanContractId}
-                txHash={tournament.sorobanTxHash}
-              />
-
-              {tournament.rosterLocked && (
-                <span className="text-xs px-2.5 py-1 rounded-md bg-sutika-bg/80 backdrop-blur-md border border-sutika-border text-sutika-muted flex items-center gap-1">
-                  <Lock className="w-3 h-3" />
-                  Listas Congeladas
-                </span>
-              )}
-            </div>
-
-            <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight leading-tight">
-              {tournament.name}
-            </h1>
-
-            <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-sutika-muted">
-              <div>
-                Organizador: <span className="text-white font-medium">{tournament.organizer.fullName}</span>
-              </div>
-              <span>•</span>
-              <div>
-                Cupo por Equipo: <span className="text-white font-medium">{tournament.teamMaxSize} jugadores</span>
-              </div>
-              <span>•</span>
-              <div>
-                Estado: <span className="text-sutika-gold font-semibold">{tournament.status}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Upgrade Banner Button if OFF_CHAIN */}
-          {tournament.mode === "OFF_CHAIN" && (
-            <div className="p-4 rounded-2xl bg-sutika-bg/90 backdrop-blur-md border border-sutika-gold/40 max-w-sm shadow-xl relative z-10">
-              <div className="flex items-center gap-2 text-xs font-bold text-sutika-gold mb-1">
-                <Sparkles className="w-4 h-4" />
-                <span>¿Conseguiste un Patrocinador?</span>
-              </div>
-              <p className="text-xs text-sutika-muted mb-3 leading-relaxed">
-                Ancla este torneo barrial a <strong>Soroban Testnet</strong> en un clic y custodia los premios con respaldo criptográfico.
-              </p>
-              <UpgradeToOnChainButton tournamentId={tournament.id} />
-            </div>
+      </section>
+      <div className="columns">
+        <section className="panel">
+          <h2>Plantillas y resultados</h2>
+          {t.teams.length ? (
+            <ul>
+              {t.teams.map((tm) => (
+                <li key={tm.id}>
+                  <strong>{tm.name}</strong> · {tm.participants.length}/
+                  {t.teamMaxSize}
+                  {t.podium.includes(tm.id)
+                    ? " · Puesto " + (t.podium.indexOf(tm.id) + 1)
+                    : ""}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>Inscripciones pendientes.</p>
           )}
-        </div>
-      </div>
-
-      {/* Prize Escrow Vault Widget */}
-      <PrizeVaultWidget
-        tournamentId={tournament.id}
-        tournamentName={tournament.name}
-        mode={tournament.mode}
-        prizes={tournament.prizes}
-      />
-
-      {/* Teams & Roster Section */}
-      <div className="rounded-2xl border border-sutika-border bg-sutika-card p-6 shadow-xl">
-        <div className="flex items-center justify-between pb-4 border-b border-sutika-border/60">
-          <div>
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <Users className="w-5 h-5 text-sutika-purple" />
-              <span>Equipos Participantes ({tournament.teams.length})</span>
-            </h3>
-            <p className="text-xs text-sutika-muted mt-0.5">
-              Afiliación directa por link de WhatsApp • Lista de buena fe auditada por los mismos jugadores
+          {opened && (
+            <p>
+              Impugnación de 24 horas desde la publicación del podio.
+              Confirmación registrada el{" "}
+              {opened.toLocaleString("es-BO", { timeZone: "America/La_Paz" })}{" "}
+              (Bolivia).
             </p>
-          </div>
-        </div>
-
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {tournament.teams.map((team) => (
-            <div
-              key={team.id}
-              className="p-4 rounded-xl bg-sutika-bg border border-sutika-border/70 flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-bold text-white text-sm">{team.name}</h4>
-                  {team.finalStanding && (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-sutika-gold/15 text-sutika-gold font-bold border border-sutika-gold/30">
-                      {team.finalStanding === 1 ? "🏆 Campeón" : team.finalStanding === 2 ? "🥈 2.° Puesto" : "🥉 3.° Puesto"}
-                    </span>
-                  )}
-                </div>
-
-                <div className="text-xs text-sutika-muted space-y-1">
-                  <div>
-                    Capitán: <span className="text-slate-200 font-medium">{team.captainName}</span>
-                  </div>
-                  <div>
-                    Teléfono: <span className="text-slate-300 font-mono">{team.captainPhone}</span>
-                  </div>
-                  <div>
-                    Plantilla: <span className="text-white font-medium">{team.membersCount} / {tournament.teamMaxSize} jugadores</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-4 pt-3 border-t border-sutika-border/50 flex items-center justify-between text-xs">
-                <span className="text-sutika-muted font-mono text-[11px]">Token: #{team.whatsappInviteToken}</span>
-                <span className="text-emerald-400 font-medium flex items-center gap-1">
-                  <MessageCircle className="w-3.5 h-3.5" />
-                  WhatsApp OK
-                </span>
-              </div>
+          )}
+        </section>
+        <section className="panel">
+          <h2>Participar y gestionar</h2>
+          <WalletActions
+            slug={slug}
+            teams={t.teams.map((tm) => ({
+              id: tm.id,
+              name: tm.name,
+              count: tm.participants.length,
+            }))}
+            size={t.teamMaxSize}
+            organizer={t.organizer.stellarSmartWalletAddress ?? ""}
+            sponsor={t.sponsorWallet ?? ""}
+            resolver={t.resolverWallet ?? ""}
+            frozen={t.rosterLocked}
+          />
+        </section>
+      </div>
+      <section className="panel">
+        <h2>Historial verificable</h2>
+        <p>
+          <a href={getExplorerContractUrl(deployment.contractId)}>
+            Contrato de Sutika ↗
+          </a>{" "}
+          {t.sorobanEscrowId && (
+            <a href={getExplorerContractUrl(t.sorobanEscrowId)}>
+              {" "}
+              Ver escrow ↗
+            </a>
+          )}
+        </p>
+        {receipts.length ? (
+          <ol>
+            {receipts.map((o) => (
+              <li key={o.id}>
+                <a href={getExplorerTxUrl(o.hash)}>
+                  {labels[o.kind] ?? o.kind}
+                  {o.slot ? " · puesto " + o.slot : ""} ↗
+                </a>
+                {o.status === "SUPERSEDED" ? " · ronda anterior" : ""}
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p>El torneo aún no tiene transacciones confirmadas.</p>
+        )}
+        {t.ledgerOperations
+          .filter((o) => ["PREPARED", "PENDING"].includes(o.status))
+          .map((o) => (
+            <div key={o.id}>
+              <p>{labels[o.kind]} · pendiente</p>
+              <ReceiptStatus id={o.id} />
             </div>
           ))}
-        </div>
-      </div>
-    </div>
+      </section>
+    </>
   );
 }

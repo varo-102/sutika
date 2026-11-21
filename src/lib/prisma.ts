@@ -1,13 +1,14 @@
+import "server-only";
 import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
+const cache = globalThis as typeof globalThis & {
+  sutikaDatabase?: PrismaClient;
 };
-
-export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
-    log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
-  });
-
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+export function database() {
+  if (!process.env.DATABASE_URL) throw new Error("Falta la conexión a Neon.");
+  return (cache.sutikaDatabase ??= new PrismaClient({
+    transactionOptions: { maxWait: 15_000, timeout: 30_000 },
+    adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
+  }));
+}

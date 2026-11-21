@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+
 }
 
 enum UserKycLevel {
@@ -21,6 +21,8 @@ enum TournamentCategory {
   BASKETBALL
   SCHOOL_EVENT
   CHESS
+  CLASH_ROYALE
+  MOBILE_LEGENDS
   ESPORTS_DOTA
   HACKATHON
 }
@@ -64,7 +66,7 @@ model User {
   whatsappPhone             String?             @unique @map("whatsapp_phone")
   phoneVerified             Boolean             @default(false) @map("phone_verified")
   kycLevel                  UserKycLevel        @default(NONE) @map("kyc_level")
-  stellarSmartWalletAddress String?             @map("stellar_smart_wallet_address")
+  stellarSmartWalletAddress String?             @unique @map("stellar_smart_wallet_address")
   createdAt                 DateTime            @default(now()) @map("created_at")
 
   verifications             UserVerification[]
@@ -109,6 +111,12 @@ model Tournament {
   deadlineLedger     Int?                @map("deadline_ledger")
   publicSlug         String              @unique @map("public_slug")
   createdAt          DateTime            @default(now()) @map("created_at")
+
+  sponsorWallet      String? @map("sponsor_wallet")
+  resolverWallet     String? @map("resolver_wallet")
+  ledgerId           String? @unique @map("ledger_id")
+  podium             String[] @default([])
+  ledgerOperations   LedgerOperation[]
 
   organizer          User                @relation("OrganizerTournaments", fields: [organizerId], references: [id])
   teams              Team[]
@@ -175,5 +183,34 @@ model TournamentPrize {
   winningTeam           Team?             @relation(fields: [winningTeamId], references: [id])
   claimedByUser         User?             @relation(fields: [claimedByUserId], references: [id])
 
+  @@unique([tournamentId, targetStanding])
   @@map("tournament_prizes")
+}
+
+
+model WalletChallenge {
+  id         String   @id
+  address    String
+  digest     String
+  expiresAt  DateTime @map("expires_at")
+  @@index([address, expiresAt])
+  @@map("wallet_challenges")
+}
+
+model LedgerOperation {
+  id            String @id @default(uuid())
+  tournamentId  String @map("tournament_id")
+  tournament    Tournament @relation(fields: [tournamentId], references: [id])
+  kind          String
+  slot          Int @default(0)
+  actor         String
+  hash          String @unique
+  unsignedXdr   String @map("unsigned_xdr")
+  context       Json
+  status        String @default("PREPARED")
+  expiresAt     DateTime @map("expires_at")
+  confirmedAt   DateTime? @map("confirmed_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+  @@index([tournamentId, kind, slot, status])
+  @@map("ledger_operations")
 }

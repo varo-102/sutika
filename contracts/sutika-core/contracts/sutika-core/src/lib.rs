@@ -1,344 +1,379 @@
 #![no_std]
+
 use soroban_sdk::{
-    contract, contracterror, contractimpl, contracttype, symbol_short, Address, BytesN, Env,
-    String, Symbol,
+    contract, contractclient, contracterror, contractevent, contractimpl, contracttype, token, vec,
+    Address, BytesN, Env, Map, String, Symbol, TryFromVal, Val, Vec,
 };
 
+const WINDOW: u64 = 24 * 60 * 60;
+const MAX_TEAMS: u32 = 16;
+
+#[contractclient(name = "MultiReleaseClient")]
+pub trait MultiRelease {
+    fn get_escrow(env: Env) -> Map<Symbol, Val>;
+    fn release_funds(env: Env, release_signer: Address, milestone_indices: Vec<u32>);
+}
+
 #[contracterror]
-#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[repr(u32)]
-pub enum SutikaError {
-    AlreadyInitialized = 1,
-    NotInitialized = 2,
-    Unauthorized = 3,
-    InvalidStanding = 4,
-    WinnersNotDeclared = 5,
-    AlreadyClaimed = 6,
-    DeadlineNotPassed = 7,
-    DeadlinePassed = 8,
-    IdentityMismatch = 9,
+pub enum Error {
+    Unknown = 1,
+    Exists = 2,
+    Invalid = 3,
+    WrongPhase = 4,
+    Waiting = 5,
+    Disputed = 6,
+    WrongWallet = 7,
+    Paid = 8,
+    TransferMismatch = 9,
+    Overflow = 10,
 }
 
 #[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum EscrowStatus {
-    Open = 0,
-    WinnersDeclared = 1,
-    Completed = 2,
-    Refunded = 3,
-}
-
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct PodiumPrize {
-    pub standing: u32,
-    pub amount_usdc: i128,
-    pub is_voucher: bool,
-    pub claimed: bool,
-    pub recipient: Option<Address>,
-    pub identity_hash: Option<BytesN<32>>,
-}
-
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct TournamentEscrow {
-    pub tournament_id: String,
+#[derive(Clone)]
+pub struct Tournament {
     pub organizer: Address,
     pub sponsor: Address,
-    pub deadline_ledger: u32,
-    pub status: EscrowStatus,
-    pub prize_1: PodiumPrize,
-    pub prize_2: PodiumPrize,
-    pub prize_3: PodiumPrize,
+    pub resolver: Address,
+    pub team_size: u32,
+    pub escrow: Option<Address>,
+    pub roster: Vec<Vec<Address>>,
+    pub podium: Vec<u32>,
+    pub net: Vec<i128>,
+    pub release_at: u64,
+    pub approved: bool,
+    pub disputed: bool,
+    pub paid: u32,
 }
 
 #[contracttype]
-pub enum DataKey {
-    Escrow(String),
+enum Key {
+    Token,
+    Tournament(BytesN<32>),
+    Escrow(Address),
 }
 
-const TOPIC_PRIZE: Symbol = symbol_short!("prize");
-const EVENT_INIT: Symbol = symbol_short!("init");
-const EVENT_WINNERS: Symbol = symbol_short!("winners");
-const EVENT_CLAIM: Symbol = symbol_short!("claim");
-const EVENT_VOUCHER: Symbol = symbol_short!("voucher");
-const EVENT_REFUND: Symbol = symbol_short!("refund");
+#[contractevent(topics = ["payout"])]
+pub struct Payout {
+    #[topic]
+    pub tournament: BytesN<32>,
+    #[topic]
+    pub place: u32,
+    pub recipients: Vec<Address>,
+    pub amounts: Vec<i128>,
+}
+
+fn field<T: TryFromVal<Env, Val>>(
+    env: &Env,
+    map: &Map<Symbol, Val>,
+    key: &str,
+) -> Result<T, Error> {
+    T::try_from_val(env, &map.get(Symbol::new(env, key)).ok_or(Error::Invalid)?)
+        .map_err(|_| Error::Invalid)
+}
+
+fn engagement(env: &Env, id: &BytesN<32>) -> String {
+    let mut hex = [0u8; 64];
+    let alphabet = b"0123456789abcdef";
+    for (i, byte) in id.to_array().iter().enumerate() {
+        hex[2 * i] = alphabet[usize::from(byte >> 4)];
+        hex[2 * i + 1] = alphabet[usize::from(byte & 15)];
+    }
+    String::from_bytes(env, &hex)
+}
+
+fn verify_binding(
+    env: &Env,
+    id: &BytesN<32>,
+    t: &Tournament,
+    escrow: &Address,
+) -> Result<(), Error> {
+    let data = MultiReleaseClient::new(env, escrow).get_escrow();
+    let roles: Map<Symbol, Val> = field(env, &data, "roles")?;
+    let asset: Map<Symbol, Val> = field(env, &data, "trustline")?;
+    let token: Address = env
+        .storage()
+        .instance()
+        .get(&Key::Token)
+        .ok_or(Error::Unknown)?;
+    let core = env.current_contract_address();
+    if field::<String>(env, &data, "engagement_id")? != engagement(env, id)
+        || field::<Address>(env, &asset, "address")? != token
+        || field::<Vec<Address>>(env, &roles, "approvers")? != vec![env, t.sponsor.clone()]
+        || field::<Vec<Address>>(env, &roles, "service_providers")?
+            != vec![env, t.organizer.clone()]
+        || field::<Vec<Address>>(env, &roles, "dispute_resolvers")? != vec![env, t.resolver.clone()]
+        || field::<Vec<Address>>(env, &roles, "release_signers")? != vec![env, core.clone()]
+    {
+        return Err(Error::Invalid);
+    }
+    let milestones: Vec<Map<Symbol, Val>> = field(env, &data, "milestones")?;
+    if milestones.len() != 3 {
+        return Err(Error::Invalid);
+    }
+    for milestone in milestones.iter() {
+        if field::<Address>(env, &milestone, "receiver")? != core {
+            return Err(Error::Invalid);
+        }
+    }
+    Ok(())
+}
+
+fn read(env: &Env, id: &BytesN<32>) -> Result<Tournament, Error> {
+    env.storage()
+        .persistent()
+        .get(&Key::Tournament(id.clone()))
+        .ok_or(Error::Unknown)
+}
+
+fn extend(env: &Env, key: &Key) {
+    let lifetime = env.storage().max_ttl().min(500_000);
+    env.storage()
+        .persistent()
+        .extend_ttl(key, lifetime / 2, lifetime);
+    env.storage().instance().extend_ttl(lifetime / 2, lifetime);
+}
+
+fn save(env: &Env, id: &BytesN<32>, state: &Tournament) {
+    let key = Key::Tournament(id.clone());
+    env.storage().persistent().set(&key, state);
+    extend(env, &key);
+}
 
 #[contract]
-pub struct SutikaEscrowContract;
+pub struct SutikaCore;
 
 #[contractimpl]
-impl SutikaEscrowContract {
-    /// Inicializa un escrow para un torneo en modo ON_CHAIN_ESCROW.
-    /// Bloquea el compromiso de premios para 1er, 2do y 3er puesto.
-    pub fn init_tournament_escrow(
-        env: Env,
-        tournament_id: String,
-        organizer: Address,
-        sponsor: Address,
-        deadline_ledger: u32,
-        prize_1_amount: i128,
-        prize_1_is_voucher: bool,
-        prize_2_amount: i128,
-        prize_2_is_voucher: bool,
-        prize_3_amount: i128,
-        prize_3_is_voucher: bool,
-    ) -> Result<(), SutikaError> {
-        sponsor.require_auth();
-
-        let key = DataKey::Escrow(tournament_id.clone());
-        if env.storage().persistent().has(&key) {
-            return Err(SutikaError::AlreadyInitialized);
-        }
-
-        let current_ledger = env.ledger().sequence();
-        if deadline_ledger <= current_ledger {
-            return Err(SutikaError::DeadlinePassed);
-        }
-
-        let escrow = TournamentEscrow {
-            tournament_id: tournament_id.clone(),
-            organizer,
-            sponsor,
-            deadline_ledger,
-            status: EscrowStatus::Open,
-            prize_1: PodiumPrize {
-                standing: 1,
-                amount_usdc: prize_1_amount,
-                is_voucher: prize_1_is_voucher,
-                claimed: false,
-                recipient: None,
-                identity_hash: None,
-            },
-            prize_2: PodiumPrize {
-                standing: 2,
-                amount_usdc: prize_2_amount,
-                is_voucher: prize_2_is_voucher,
-                claimed: false,
-                recipient: None,
-                identity_hash: None,
-            },
-            prize_3: PodiumPrize {
-                standing: 3,
-                amount_usdc: prize_3_amount,
-                is_voucher: prize_3_is_voucher,
-                claimed: false,
-                recipient: None,
-                identity_hash: None,
-            },
-        };
-
-        env.storage().persistent().set(&key, &escrow);
-
-        env.events().publish(
-            (TOPIC_PRIZE, EVENT_INIT),
-            (tournament_id, escrow.organizer, escrow.sponsor, deadline_ledger),
-        );
-
-        Ok(())
+impl SutikaCore {
+    pub fn __constructor(env: Env, token: Address) {
+        env.storage().instance().set(&Key::Token, &token);
     }
 
-    /// El organizador declara los ganadores del podio una vez finalizado el torneo.
-    pub fn declare_winners(
+    pub fn create(
         env: Env,
-        tournament_id: String,
+        id: BytesN<32>,
         organizer: Address,
-    ) -> Result<(), SutikaError> {
+        sponsor: Address,
+        resolver: Address,
+        team_size: u32,
+    ) -> Result<(), Error> {
         organizer.require_auth();
-
-        let key = DataKey::Escrow(tournament_id.clone());
-        let mut escrow: TournamentEscrow = env
-            .storage()
-            .persistent()
-            .get(&key)
-            .ok_or(SutikaError::NotInitialized)?;
-
-        if escrow.organizer != organizer {
-            return Err(SutikaError::Unauthorized);
+        if env.storage().persistent().has(&Key::Tournament(id.clone())) {
+            return Err(Error::Exists);
         }
-
-        escrow.status = EscrowStatus::WinnersDeclared;
-        env.storage().persistent().set(&key, &escrow);
-
-        env.events().publish(
-            (TOPIC_PRIZE, EVENT_WINNERS),
-            (tournament_id, organizer),
+        if (team_size != 1 && team_size != 5)
+            || organizer == sponsor
+            || organizer == resolver
+            || sponsor == resolver
+        {
+            return Err(Error::Invalid);
+        }
+        save(
+            &env,
+            &id,
+            &Tournament {
+                organizer,
+                sponsor,
+                resolver,
+                team_size,
+                escrow: None,
+                roster: Vec::new(&env),
+                podium: Vec::new(&env),
+                net: Vec::new(&env),
+                release_at: 0,
+                approved: false,
+                disputed: false,
+                paid: 0,
+            },
         );
-
         Ok(())
     }
 
-    /// El Capitán o Delegado del equipo ganador reclama el premio USDC.
-    /// Valida el reclamo, registra el IdentityHash y emite el recibo en Stellar (Proof of Prize Delivery).
-    pub fn claim_podium_prize(
-        env: Env,
-        tournament_id: String,
-        standing: u32,
-        captain: Address,
-        identity_hash: BytesN<32>,
-    ) -> Result<i128, SutikaError> {
-        captain.require_auth();
-
-        let key = DataKey::Escrow(tournament_id.clone());
-        let mut escrow: TournamentEscrow = env
-            .storage()
-            .persistent()
-            .get(&key)
-            .ok_or(SutikaError::NotInitialized)?;
-
-        if escrow.status != EscrowStatus::WinnersDeclared {
-            return Err(SutikaError::WinnersNotDeclared);
+    pub fn bind_escrow(env: Env, id: BytesN<32>, escrow: Address) -> Result<(), Error> {
+        let mut t = read(&env, &id)?;
+        t.sponsor.require_auth();
+        let key = Key::Escrow(escrow.clone());
+        if t.escrow.is_some() || env.storage().persistent().has(&key) {
+            return Err(Error::Exists);
         }
-
-        let prize_amount: i128;
-
-        match standing {
-            1 => {
-                if escrow.prize_1.claimed {
-                    return Err(SutikaError::AlreadyClaimed);
-                }
-                escrow.prize_1.claimed = true;
-                escrow.prize_1.recipient = Some(captain.clone());
-                escrow.prize_1.identity_hash = Some(identity_hash.clone());
-                prize_amount = escrow.prize_1.amount_usdc;
-            }
-            2 => {
-                if escrow.prize_2.claimed {
-                    return Err(SutikaError::AlreadyClaimed);
-                }
-                escrow.prize_2.claimed = true;
-                escrow.prize_2.recipient = Some(captain.clone());
-                escrow.prize_2.identity_hash = Some(identity_hash.clone());
-                prize_amount = escrow.prize_2.amount_usdc;
-            }
-            3 => {
-                if escrow.prize_3.claimed {
-                    return Err(SutikaError::AlreadyClaimed);
-                }
-                escrow.prize_3.claimed = true;
-                escrow.prize_3.recipient = Some(captain.clone());
-                escrow.prize_3.identity_hash = Some(identity_hash.clone());
-                prize_amount = escrow.prize_3.amount_usdc;
-            }
-            _ => return Err(SutikaError::InvalidStanding),
-        }
-
-        if escrow.prize_1.claimed && escrow.prize_2.claimed && escrow.prize_3.claimed {
-            escrow.status = EscrowStatus::Completed;
-        }
-
-        env.storage().persistent().set(&key, &escrow);
-
-        // Publica evento oficial de Proof of Prize Delivery en Stellar
-        env.events().publish(
-            (TOPIC_PRIZE, EVENT_CLAIM),
-            (tournament_id, standing, captain, identity_hash, prize_amount),
-        );
-
-        Ok(prize_amount)
-    }
-
-    /// El comercio auspiciador o representante canjea el Voucher QR en mostrador (Nivel 1 KYC).
-    pub fn redeem_prize_voucher(
-        env: Env,
-        tournament_id: String,
-        standing: u32,
-        merchant: Address,
-        captain_identity_hash: BytesN<32>,
-    ) -> Result<(), SutikaError> {
-        merchant.require_auth();
-
-        let key = DataKey::Escrow(tournament_id.clone());
-        let mut escrow: TournamentEscrow = env
-            .storage()
-            .persistent()
-            .get(&key)
-            .ok_or(SutikaError::NotInitialized)?;
-
-        match standing {
-            1 => {
-                if escrow.prize_1.claimed {
-                    return Err(SutikaError::AlreadyClaimed);
-                }
-                escrow.prize_1.claimed = true;
-                escrow.prize_1.identity_hash = Some(captain_identity_hash.clone());
-            }
-            2 => {
-                if escrow.prize_2.claimed {
-                    return Err(SutikaError::AlreadyClaimed);
-                }
-                escrow.prize_2.claimed = true;
-                escrow.prize_2.identity_hash = Some(captain_identity_hash.clone());
-            }
-            3 => {
-                if escrow.prize_3.claimed {
-                    return Err(SutikaError::AlreadyClaimed);
-                }
-                escrow.prize_3.claimed = true;
-                escrow.prize_3.identity_hash = Some(captain_identity_hash.clone());
-            }
-            _ => return Err(SutikaError::InvalidStanding),
-        }
-
-        if escrow.prize_1.claimed && escrow.prize_2.claimed && escrow.prize_3.claimed {
-            escrow.status = EscrowStatus::Completed;
-        }
-
-        env.storage().persistent().set(&key, &escrow);
-
-        env.events().publish(
-            (TOPIC_PRIZE, EVENT_VOUCHER),
-            (tournament_id, standing, merchant, captain_identity_hash),
-        );
-
+        verify_binding(&env, &id, &t, &escrow)?;
+        env.storage().persistent().set(&key, &id);
+        extend(&env, &key);
+        t.escrow = Some(escrow);
+        save(&env, &id, &t);
         Ok(())
     }
 
-    /// Reembolso al patrocinador si expira el plazo límite sin que se reclamen los premios.
-    pub fn refund_sponsor(
-        env: Env,
-        tournament_id: String,
-        sponsor: Address,
-    ) -> Result<(), SutikaError> {
-        sponsor.require_auth();
-
-        let key = DataKey::Escrow(tournament_id.clone());
-        let mut escrow: TournamentEscrow = env
-            .storage()
-            .persistent()
-            .get(&key)
-            .ok_or(SutikaError::NotInitialized)?;
-
-        if escrow.sponsor != sponsor {
-            return Err(SutikaError::Unauthorized);
+    pub fn freeze(env: Env, id: BytesN<32>, teams: Vec<Vec<Address>>) -> Result<(), Error> {
+        let mut t = read(&env, &id)?;
+        t.organizer.require_auth();
+        if !t.roster.is_empty() || t.escrow.is_none() {
+            return Err(Error::WrongPhase);
         }
-
-        let current_ledger = env.ledger().sequence();
-        if current_ledger < escrow.deadline_ledger {
-            return Err(SutikaError::DeadlineNotPassed);
+        if teams.len() < 3 || teams.len() > MAX_TEAMS {
+            return Err(Error::Invalid);
         }
-
-        if escrow.status == EscrowStatus::Completed || escrow.status == EscrowStatus::Refunded {
-            return Err(SutikaError::AlreadyClaimed);
+        let mut seen: Map<Address, bool> = Map::new(&env);
+        for team in teams.iter() {
+            if team.len() != t.team_size {
+                return Err(Error::Invalid);
+            }
+            for wallet in team.iter() {
+                if seen.contains_key(wallet.clone()) {
+                    return Err(Error::Invalid);
+                }
+                seen.set(wallet, true);
+            }
         }
-
-        escrow.status = EscrowStatus::Refunded;
-        env.storage().persistent().set(&key, &escrow);
-
-        env.events().publish(
-            (TOPIC_PRIZE, EVENT_REFUND),
-            (tournament_id, sponsor),
-        );
-
+        t.roster = teams;
+        save(&env, &id, &t);
         Ok(())
     }
 
-    /// Consulta el estado completo del escrow de un torneo.
-    pub fn get_escrow(env: Env, tournament_id: String) -> Result<TournamentEscrow, SutikaError> {
-        let key = DataKey::Escrow(tournament_id);
-        env.storage()
-            .persistent()
-            .get(&key)
-            .ok_or(SutikaError::NotInitialized)
+    pub fn declare(
+        env: Env,
+        id: BytesN<32>,
+        podium: Vec<u32>,
+        net: Vec<i128>,
+    ) -> Result<(), Error> {
+        let mut t = read(&env, &id)?;
+        t.organizer.require_auth();
+        if t.roster.is_empty() || !t.podium.is_empty() || t.paid != 0 {
+            return Err(Error::WrongPhase);
+        }
+        if podium.len() != 3 || net.len() != 3 {
+            return Err(Error::Invalid);
+        }
+        let mut selected: Vec<u32> = Vec::new(&env);
+        for (index, amount) in podium.iter().zip(net.iter()) {
+            if index >= t.roster.len()
+                || selected.contains(&index)
+                || amount < i128::from(t.team_size)
+            {
+                return Err(Error::Invalid);
+            }
+            selected.push_back(index);
+        }
+        t.podium = podium;
+        t.net = net;
+        t.release_at = env
+            .ledger()
+            .timestamp()
+            .checked_add(WINDOW)
+            .ok_or(Error::Overflow)?;
+        save(&env, &id, &t);
+        Ok(())
+    }
+
+    pub fn approve(env: Env, id: BytesN<32>) -> Result<(), Error> {
+        let mut t = read(&env, &id)?;
+        t.sponsor.require_auth();
+        if t.podium.is_empty() || t.disputed {
+            return Err(Error::WrongPhase);
+        }
+        t.approved = true;
+        save(&env, &id, &t);
+        Ok(())
+    }
+
+    pub fn dispute(env: Env, id: BytesN<32>, by: Address) -> Result<(), Error> {
+        let mut t = read(&env, &id)?;
+        by.require_auth();
+        if t.podium.is_empty() || env.ledger().timestamp() >= t.release_at || t.disputed {
+            return Err(Error::WrongPhase);
+        }
+        if by != t.sponsor && by != t.organizer && !t.roster.iter().any(|team| team.contains(&by)) {
+            return Err(Error::WrongWallet);
+        }
+        t.disputed = true;
+        save(&env, &id, &t);
+        Ok(())
+    }
+
+    pub fn resolve(env: Env, id: BytesN<32>, uphold_podium: bool) -> Result<(), Error> {
+        let mut t = read(&env, &id)?;
+        t.resolver.require_auth();
+        if !t.disputed || t.paid != 0 {
+            return Err(Error::WrongPhase);
+        }
+        t.disputed = false;
+        if !uphold_podium {
+            t.podium = Vec::new(&env);
+            t.net = Vec::new(&env);
+            t.approved = false;
+            t.release_at = 0;
+        }
+        save(&env, &id, &t);
+        Ok(())
+    }
+
+    pub fn release(env: Env, id: BytesN<32>, place: u32, claimant: Address) -> Result<(), Error> {
+        let mut t = read(&env, &id)?;
+        claimant.require_auth();
+        if !(1..=3).contains(&place) {
+            return Err(Error::Invalid);
+        }
+        if t.disputed {
+            return Err(Error::Disputed);
+        }
+        if !t.approved || t.podium.len() != 3 {
+            return Err(Error::WrongPhase);
+        }
+        if env.ledger().timestamp() < t.release_at {
+            return Err(Error::Waiting);
+        }
+        let index = place - 1;
+        let bit = 1 << index;
+        if t.paid & bit != 0 {
+            return Err(Error::Paid);
+        }
+        let team = t
+            .roster
+            .get(t.podium.get(index).ok_or(Error::Invalid)?)
+            .ok_or(Error::Invalid)?;
+        if !team.contains(&claimant) {
+            return Err(Error::WrongWallet);
+        }
+        let total = t.net.get(index).ok_or(Error::Invalid)?;
+        let escrow = t.escrow.clone().ok_or(Error::WrongPhase)?;
+        verify_binding(&env, &id, &t, &escrow)?;
+        let token: Address = env
+            .storage()
+            .instance()
+            .get(&Key::Token)
+            .ok_or(Error::Unknown)?;
+        let usdc = token::Client::new(&env, &token);
+        let here = env.current_contract_address();
+        let initial = usdc.balance(&here);
+        t.paid |= bit;
+        save(&env, &id, &t);
+        // Direct contract invocation authorizes this registry as the TW release signer.
+        MultiReleaseClient::new(&env, &escrow).release_funds(&here, &vec![&env, index]);
+        if usdc.balance(&here).checked_sub(initial) != Some(total) {
+            return Err(Error::TransferMismatch);
+        }
+        let count = i128::from(team.len());
+        let mut amounts = Vec::new(&env);
+        for (i, wallet) in team.iter().enumerate() {
+            let amount = total / count + i128::from((i as i128) < total % count);
+            usdc.transfer(&here, &wallet, &amount);
+            amounts.push_back(amount);
+        }
+        Payout {
+            tournament: id,
+            place,
+            recipients: team,
+            amounts,
+        }
+        .publish(&env);
+        Ok(())
+    }
+
+    pub fn tournament(env: Env, id: BytesN<32>) -> Result<Tournament, Error> {
+        read(&env, &id)
     }
 }
+
+#[cfg(test)]
+mod test;
